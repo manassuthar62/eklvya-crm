@@ -25,7 +25,7 @@ function Dashboard() {
     dayCollection: 0, 
     dayExpense: 0, 
     netProfit: 0, 
-    totalPending: 0 // 👈 Naya Field
+    totalPending: 0 
   });
 
   useEffect(() => { loadData(); }, []);
@@ -48,7 +48,7 @@ function Dashboard() {
     } catch (error) { console.log("Error loading data from Render"); }
   };
 
-  // 👇 DELETE FUNCTION
+  // 👇 DELETE STUDENT FUNCTION
   const handleDeleteStudent = async (id) => {
     if(window.confirm("⚠️ WARNING: Kya aap is student ko HAMESHA ke liye delete karna chahte hain?")) {
         try {
@@ -58,6 +58,17 @@ function Dashboard() {
         } catch (error) {
             alert("Error deleting student");
         }
+    }
+  };
+
+  // 👇 DELETE EXPENSE FUNCTION (NEW)
+  const handleDeleteExpense = async (id) => {
+    if(window.confirm("⚠️ Kya aap is kharche ko delete karna chahte hain?")) {
+        try {
+            await axios.delete(`${BASE_URL}/expense/delete/${id}`);
+            alert("🗑️ Expense Deleted!");
+            loadData(); // List refresh
+        } catch (error) { alert("Error deleting expense"); }
     }
   };
 
@@ -93,7 +104,7 @@ function Dashboard() {
 
   const calculateDailyStats = (stdData, expData, dateToCheck) => {
     let adm = 0, coll = 0, totalExpense = 0;
-    let allPending = 0; // 👈 Total Pending Calculation Variable
+    let allPending = 0; 
 
     // 1. Student Calculations
     stdData.forEach(std => {
@@ -126,7 +137,7 @@ function Dashboard() {
         dayCollection: coll, 
         dayExpense: totalExpense, 
         netProfit: coll - totalExpense, 
-        totalPending: allPending // 👈 Save kiya
+        totalPending: allPending 
     });
   };
 
@@ -193,7 +204,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* STATS CARDS (5 Cards Now) */}
+      {/* STATS CARDS (5 Cards) */}
       <div style={styles.grid}>
         <div style={{...styles.card, borderTop: "4px solid #f59e0b"}}>
             <h4 style={{margin:"0 0 5px", color:"#64748b", fontSize: "12px", textTransform: "uppercase"}}>Cash In</h4>
@@ -208,7 +219,7 @@ function Dashboard() {
             <h1 style={{margin:0, color:"#10b981", fontSize: "24px"}}>₹{stats.netProfit}</h1>
         </div>
         
-        {/* 👇 NAYA BOX: TOTAL PENDING PAYMENT */}
+        {/* TOTAL PENDING PAYMENT BOX */}
         <div style={{...styles.card, borderTop: "4px solid #dc2626"}}>
             <h4 style={{margin:"0 0 5px", color:"#64748b", fontSize: "12px", textTransform: "uppercase"}}>Total Pending</h4>
             <h1 style={{margin:0, color:"#dc2626", fontSize: "24px"}}>₹{stats.totalPending}</h1>
@@ -267,7 +278,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* POPUPS (UI same as before) */}
+      {/* POPUPS */}
       {showExpenseForm && (
         <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1100 }}>
             <div style={{ background: "white", padding: "20px", borderRadius: "20px", width: "320px", margin: "20px" }}>
@@ -285,6 +296,7 @@ function Dashboard() {
         </div>
       )}
 
+      {/* 👇 EXPENSE HISTORY POPUP (With Delete Button) */}
       {viewExpenseHistory && (
         <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1100 }}>
             <div style={{ background: "white", padding: "20px", borderRadius: "10px", width: "90%", maxWidth: "500px", boxShadow: "0 5px 15px rgba(0,0,0,0.3)" }}>
@@ -296,18 +308,27 @@ function Dashboard() {
                     <div style={{overflowX: "auto"}}>
                         <table border="1" style={{width: "100%", borderCollapse: "collapse", minWidth: "300px"}}>
                             <thead style={{background: "#eee"}}>
-                                <tr><th style={{padding: "5px"}}>Item</th><th style={{padding: "5px"}}>Category</th><th style={{padding: "5px"}}>Date</th><th style={{padding: "5px"}}>Amount</th></tr>
+                                <tr>
+                                    <th style={{padding: "5px"}}>Item</th>
+                                    <th style={{padding: "5px"}}>Date</th>
+                                    <th style={{padding: "5px"}}>Amount</th>
+                                    <th style={{padding: "5px"}}>Action</th> {/* Delete Header */}
+                                </tr>
                             </thead>
                             <tbody>
                                 {expenses.filter(e => new Date(e.date).toISOString().split('T')[0] === selectedDate).map(exp => (
                                     <tr key={exp._id}>
-                                        <td style={{padding: "5px"}}>{exp.title}</td>
-                                        <td style={{padding: "5px"}}>{exp.category}</td>
+                                        <td style={{padding: "5px"}}>{exp.title} <br/><small>{exp.category}</small></td>
                                         <td style={{padding: "5px"}}>{new Date(exp.date).toLocaleDateString()}</td>
                                         <td style={{padding: "5px", fontWeight: "bold", color: "red"}}>₹{exp.amount}</td>
+                                        
+                                        {/* 👇 DELETE BUTTON */}
+                                        <td style={{padding: "5px", textAlign: "center"}}>
+                                            <button onClick={() => handleDeleteExpense(exp._id)} style={{border: "none", background: "none", cursor: "pointer", fontSize: "16px"}}>🗑️</button>
+                                        </td>
                                     </tr>
                                 ))}
-                                <tr style={{background: "#ffebeb"}}><td colSpan="3" style={{padding: "5px", fontWeight: "bold", textAlign: "right"}}>Total:</td><td style={{padding: "5px", fontWeight: "bold", color: "red"}}>₹{stats.dayExpense}</td></tr>
+                                <tr style={{background: "#ffebeb"}}><td colSpan="2" style={{padding: "5px", fontWeight: "bold", textAlign: "right"}}>Total:</td><td style={{padding: "5px", fontWeight: "bold", color: "red"}}>₹{stats.dayExpense}</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -316,6 +337,7 @@ function Dashboard() {
         </div>
       )}
 
+      {/* STUDENT DETAIL POPUP */}
       {viewStudent && (
         <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.7)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
             <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "10px", width: "90%", maxWidth: "500px", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>

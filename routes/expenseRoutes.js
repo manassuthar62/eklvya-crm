@@ -38,5 +38,13 @@ router.delete('/delete/:id', async (req, res) => {
         res.status(500).json({ message: "Error" });
     }
 });
-
+// 👇 DELETE EXPENSE ROUTE (Ise routes/expense.js me sabse neeche dalein)
+router.delete('/delete/:id', async (req, res) => {
+    try {
+        await Expense.findByIdAndDelete(req.params.id);
+        res.json({ success: true, message: "Expense Deleted Successfully" });
+    } catch (error) {
+        res.status(500).json({ success: false, message: "Error deleting expense" });
+    }
+});
 module.exports = router;
