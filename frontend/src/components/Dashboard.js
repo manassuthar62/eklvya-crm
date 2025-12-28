@@ -25,8 +25,7 @@ function Dashboard() {
     dayCollection: 0, 
     dayExpense: 0, 
     netProfit: 0, 
-    dayBusiness: 0, 
-    dayPending: 0
+    totalPending: 0 // 👈 Naya Field
   });
 
   useEffect(() => { loadData(); }, []);
@@ -49,28 +48,62 @@ function Dashboard() {
     } catch (error) { console.log("Error loading data from Render"); }
   };
 
-  // 👇 DELETE FUNCTION (NEW)
+  // 👇 DELETE FUNCTION
   const handleDeleteStudent = async (id) => {
     if(window.confirm("⚠️ WARNING: Kya aap is student ko HAMESHA ke liye delete karna chahte hain?")) {
         try {
             await axios.delete(`${BASE_URL}/student/delete/${id}`);
             alert("🗑️ Student Deleted!");
-            loadData(); // List refresh
+            loadData(); 
         } catch (error) {
             alert("Error deleting student");
         }
     }
   };
 
+  // 👇 LIGHTWEIGHT EXCEL (CSV) DOWNLOAD
+  const handleDownloadReport = () => {
+    const targetMonth = selectedDate.substring(0, 7); 
+    let csvContent = "Date,Type,Description,Category,Amount\n";
+
+    students.forEach(std => {
+        std.paymentHistory.forEach(pay => {
+            if(pay.date.startsWith(targetMonth)) {
+                const row = `${new Date(pay.date).toLocaleDateString()},INCOME,${std.name} (${std.course}),Fee Collection,${pay.amount}`;
+                csvContent += row + "\n";
+            }
+        });
+    });
+
+    expenses.forEach(exp => {
+        if(exp.date.startsWith(targetMonth)) {
+            const row = `${new Date(exp.date).toLocaleDateString()},EXPENSE,${exp.title},${exp.category},-${exp.amount}`;
+            csvContent += row + "\n";
+        }
+    });
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.setAttribute("download", `Report_${targetMonth}.csv`);
+    document.body.appendChild(link);
+    link.click();
+  };
+
   const calculateDailyStats = (stdData, expData, dateToCheck) => {
-    let adm = 0, coll = 0, bus = 0, pending = 0;
-    let totalExpense = 0;
+    let adm = 0, coll = 0, totalExpense = 0;
+    let allPending = 0; // 👈 Total Pending Calculation Variable
 
     // 1. Student Calculations
     stdData.forEach(std => {
+        // Calculate Global Pending (Date se matlab nahi, sabka total)
+        allPending += (std.fees.finalFee - std.fees.paidAmount);
+
+        // Daily Stats Logic
         let admDate = std.admissionDate ? new Date(std.admissionDate).toISOString().split('T')[0] : "";
         if(admDate === dateToCheck) {
-            adm++; bus += std.fees.finalFee; pending += (std.fees.finalFee - std.fees.paidAmount);
+            adm++; 
         }
         if(std.paymentHistory) {
             std.paymentHistory.forEach(pay => {
@@ -93,8 +126,7 @@ function Dashboard() {
         dayCollection: coll, 
         dayExpense: totalExpense, 
         netProfit: coll - totalExpense, 
-        dayBusiness: bus, 
-        dayPending: pending 
+        totalPending: allPending // 👈 Save kiya
     });
   };
 
@@ -121,74 +153,112 @@ function Dashboard() {
     }
   };
 
+  // --- STYLES ---
+  const styles = {
+    container: { maxWidth: "1200px", margin: "0 auto", padding: "10px", fontFamily: "'Segoe UI', sans-serif" },
+    header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", background: "white", padding: "15px", borderRadius: "15px", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", flexWrap: "wrap", gap: "15px" },
+    title: { margin: 0, color: "#1e293b", fontSize: "22px", fontWeight: "800", flex: "1 1 auto" },
+    controls: { display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-start" },
+    btnPrimary: { background: "linear-gradient(135deg, #6366f1, #4f46e5)", color: "white", padding: "8px 15px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" },
+    btnSuccess: { background: "#10b981", color: "white", padding: "8px 15px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", display: "flex", alignItems: "center", gap: "5px", fontSize: "13px" },
+    btnDanger: { background: "#ef4444", color: "white", padding: "8px 15px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" },
+    btnOutline: { background: "transparent", border: "1px solid #334155", color: "#334155", padding: "8px 15px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" },
+    dateInput: { padding: "8px", borderRadius: "8px", border: "1px solid #cbd5e1", outline: "none", fontSize: "13px" },
+    grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "15px", marginBottom: "30px" },
+    card: { background: "white", padding: "20px", borderRadius: "16px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", textAlign: "center" },
+    tableContainer: { background: "white", borderRadius: "16px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", overflow: "hidden", overflowX: "auto" },
+    table: { width: "100%", borderCollapse: "collapse", minWidth: "600px" },
+    tableHeader: { background: "#f8fafc", color: "#64748b", fontWeight: "600", textAlign: "left", padding: "12px", fontSize: "13px", textTransform: "uppercase", whiteSpace: "nowrap" },
+    tableRow: { borderBottom: "1px solid #f1f5f9" },
+    tableCell: { padding: "12px", color: "#334155", verticalAlign: "middle", fontSize: "14px" },
+    statusBadge: (approved) => ({
+      padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "bold",
+      background: approved ? "#dcfce7" : "#fef9c3", color: approved ? "#166534" : "#854d0e",
+      display: "inline-block"
+    })
+  };
+
   return (
-    <div style={{ padding: "10px", fontFamily: "Arial", backgroundColor: "#f4f7f6", minHeight: "100vh" }}>
+    <div style={styles.container}>
       
-      {/* HEADER (FlexWrap added for mobile) */}
-      <div style={{ display: "flex", justifyContent: "space-between", marginBottom: "20px", flexWrap: "wrap", gap: "15px" }}>
-        <h2 style={{ color: "#2c3e50", margin: "0" }}>👑 Admin Dashboard</h2>
-        <div style={{display: "flex", alignItems: "center", gap: "10px", flexWrap: "wrap"}}>
-             <button onClick={() => setShowExpenseForm(true)} style={{ background: "#e74c3c", color: "white", padding: "8px 15px", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold" }}>
-                💸 Add Expense
-             </button>
-
-             <div style={{ background: "white", padding: "5px 15px", borderRadius: "20px", boxShadow: "0 2px 5px rgba(0,0,0,0.1)" }}>
-                <label style={{ fontWeight: "bold", marginRight: "10px" }}>📅 Report:</label>
-                <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={{ border: "none", fontSize: "16px", maxWidth: "120px" }} />
-            </div>
-            <button onClick={() => navigate('/')} style={{ background: "#c0392b", color: "white", padding: "8px 15px", border: "none", borderRadius: "5px", cursor: "pointer" }}>Logout</button>
-            <button onClick={() => navigate('/admin/staff-manager')} style={{ background: "#2c3e50", color: "white", padding: "8px 15px", border: "none", borderRadius: "5px", cursor: "pointer" }}>Staff 👥</button>
+      {/* HEADER */}
+      <div style={styles.header}>
+        <h2 style={styles.title}>🚀 Admin</h2>
+        <div style={styles.controls}>
+             <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={styles.dateInput} />
+             <button onClick={handleDownloadReport} style={styles.btnSuccess}>📥 Report</button>
+             <button onClick={() => setShowExpenseForm(true)} style={styles.btnPrimary}>+ Expense</button>
+             <button onClick={() => navigate('/admin/staff-manager')} style={styles.btnOutline}>Staff</button>
+             <button onClick={() => navigate('/')} style={styles.btnDanger}>Logout</button>
         </div>
       </div>
 
-      {/* STATS CARDS */}
-      <div style={{ display: "flex", gap: "15px", marginBottom: "20px", flexWrap: "wrap" }}>
-        <Card title="💰 Cash Collection" value={`₹${stats.dayCollection}`} color="#f1c40f" sub="Total money in" highlight />
+      {/* STATS CARDS (5 Cards Now) */}
+      <div style={styles.grid}>
+        <div style={{...styles.card, borderTop: "4px solid #f59e0b"}}>
+            <h4 style={{margin:"0 0 5px", color:"#64748b", fontSize: "12px", textTransform: "uppercase"}}>Cash In</h4>
+            <h1 style={{margin:0, color:"#1e293b", fontSize: "24px"}}>₹{stats.dayCollection}</h1>
+        </div>
+        <div onClick={() => setViewExpenseHistory(true)} style={{...styles.card, borderTop: "4px solid #ef4444", cursor:"pointer"}}>
+            <h4 style={{margin:"0 0 5px", color:"#64748b", fontSize: "12px", textTransform: "uppercase"}}>Expense</h4>
+            <h1 style={{margin:0, color:"#ef4444", fontSize: "24px"}}>₹{stats.dayExpense}</h1>
+        </div>
+        <div style={{...styles.card, borderTop: "4px solid #10b981"}}>
+            <h4 style={{margin:"0 0 5px", color:"#64748b", fontSize: "12px", textTransform: "uppercase"}}>Profit</h4>
+            <h1 style={{margin:0, color:"#10b981", fontSize: "24px"}}>₹{stats.netProfit}</h1>
+        </div>
         
-        <div onClick={() => setViewExpenseHistory(true)} style={{cursor: "pointer", flex: 1, minWidth: "200px"}}>
-            <Card title="💸 Total Expense (Click)" value={`₹${stats.dayExpense}`} color="#e74c3c" sub="Click to see details" />
+        {/* 👇 NAYA BOX: TOTAL PENDING PAYMENT */}
+        <div style={{...styles.card, borderTop: "4px solid #dc2626"}}>
+            <h4 style={{margin:"0 0 5px", color:"#64748b", fontSize: "12px", textTransform: "uppercase"}}>Total Pending</h4>
+            <h1 style={{margin:0, color:"#dc2626", fontSize: "24px"}}>₹{stats.totalPending}</h1>
         </div>
 
-        <Card title="✅ Net Profit" value={`₹${stats.netProfit}`} color="#27ae60" sub="Asli Bachat" />
-        <Card title="New Admissions" value={stats.dayAdmissions} color="#3498db" sub="Joined today" />
+        <div style={{...styles.card, borderTop: "4px solid #3b82f6"}}>
+            <h4 style={{margin:"0 0 5px", color:"#64748b", fontSize: "12px", textTransform: "uppercase"}}>Admissions</h4>
+            <h1 style={{margin:0, color:"#3b82f6", fontSize: "24px"}}>{stats.dayAdmissions}</h1>
+        </div>
       </div>
 
-      {/* TABLE (Added overflowX for mobile scroll) */}
-      <div style={{ background: "white", padding: "10px", borderRadius: "10px", boxShadow: "0 2px 10px rgba(0,0,0,0.05)" }}>
-        <h3 style={{ borderBottom: "2px solid #eee", paddingBottom: "10px" }}>📄 All Student Database</h3>
-        
-        <div style={{ overflowX: "auto" }}> {/* 👈 WRAPPER ADDED FOR SCROLLING */}
-            <table style={{ width: "100%", borderCollapse: "collapse", minWidth: "600px" }}> {/* 👈 MIN-WIDTH ADDED */}
-                <thead style={{ background: "#2c3e50", color: "white" }}>
+      {/* TABLE */}
+      <div style={styles.tableContainer}>
+        <div style={{padding: "15px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+            <h3 style={{margin:0, color: "#1e293b", fontSize: "16px"}}>📄 Students</h3>
+            <span style={{fontSize: "11px", color: "#64748b", background: "#f1f5f9", padding: "4px 8px", borderRadius: "20px"}}>{students.length} Records</span>
+        </div>
+        <div style={{overflowX: "auto"}}>
+            <table style={styles.table}>
+                <thead>
                     <tr>
-                        <th style={{padding: "12px"}}>Name</th>
-                        <th>Joined Date</th>
-                        <th>Mobile</th>
-                        <th>Paid</th>
-                        <th>Balance</th>
-                        <th>Status / Action</th>
+                        <th style={styles.tableHeader}>Student Name</th>
+                        <th style={styles.tableHeader}>Mobile</th>
+                        <th style={styles.tableHeader}>Fee Status</th>
+                        <th style={styles.tableHeader}>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
                     {students.map((std) => (
-                        <tr key={std._id} style={{textAlign: "center", borderBottom: "1px solid #eee"}}>
-                            <td style={{padding: "10px", textAlign: "left"}}>
-                                <strong>{std.name}</strong><br/><small style={{color: "gray"}}>{std.course}</small>
+                        <tr key={std._id} style={styles.tableRow}>
+                            <td style={styles.tableCell}>
+                                <div style={{fontWeight: "bold", fontSize: "14px"}}>{std.name}</div>
+                                <div style={{fontSize: "11px", color: "#64748b", marginTop: "2px"}}>{std.course} • {new Date(std.admissionDate).toLocaleDateString()}</div>
                             </td>
-                            <td>{std.admissionDate ? new Date(std.admissionDate).toLocaleDateString() : "-"}</td>
-                            <td>{std.mobile}</td>
-                            <td style={{color: "green", fontWeight: "bold"}}>₹{std.fees.paidAmount}</td>
-                            <td style={{color: "red", fontWeight: "bold"}}>₹{std.fees.finalFee - std.fees.paidAmount}</td>
-                            <td style={{padding: "8px", minWidth: "150px"}}> {/* MinWidth for buttons */}
-                                {/* APPROVE / VIEW BUTTON */}
-                                {!std.approval.isApproved ? (
-                                    <button onClick={() => handleApprove(std._id)} style={{background: "green", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px", marginRight: "5px"}}>Approve</button>
-                                ) : (
-                                    <button onClick={() => setViewStudent(std)} style={{background: "#27ae60", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px", marginRight: "5px"}}>View 👁️</button>
-                                )}
-
-                                {/* 👇 DELETE BUTTON (NEW) */}
-                                <button onClick={() => handleDeleteStudent(std._id)} style={{background: "red", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px", cursor: "pointer"}}>Delete 🗑️</button>
+                            <td style={styles.tableCell}><span style={{background: "#eff6ff", color: "#2563eb", padding: "4px 8px", borderRadius: "6px", fontSize: "12px", fontWeight: "600"}}>{std.mobile}</span></td>
+                            <td style={styles.tableCell}>
+                                <div style={{fontSize: "12px", display: "flex", flexDirection: "column", gap: "2px"}}>
+                                    <span style={{color:"#16a34a", fontWeight: "600"}}>Paid: ₹{std.fees.paidAmount}</span>
+                                    <span style={{color:"#dc2626", fontWeight: "600"}}>Bal: ₹{std.fees.finalFee - std.fees.paidAmount}</span>
+                                </div>
+                            </td>
+                            <td style={styles.tableCell}>
+                                <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
+                                    {!std.approval.isApproved ? (
+                                        <button onClick={() => handleApprove(std._id)} style={{...styles.statusBadge(false), border:"none", cursor:"pointer"}}>Approve</button>
+                                    ) : (
+                                        <span onClick={() => setViewStudent(std)} style={{...styles.statusBadge(true), cursor:"pointer"}}>View</span>
+                                    )}
+                                    <button onClick={() => handleDeleteStudent(std._id)} style={{border: "1px solid #fee2e2", background: "#fef2f2", color: "#ef4444", borderRadius: "6px", padding: "5px 8px", cursor: "pointer"}}>🗑️</button>
+                                </div>
                             </td>
                         </tr>
                     ))}
@@ -197,36 +267,24 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* POPUPS (Expense Form, History, Student Detail) - Same UI logic as your original code */}
-      {/* ... Add Expense Popup ... */}
+      {/* POPUPS (UI same as before) */}
       {showExpenseForm && (
-        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1100 }}>
-            <div style={{ background: "white", padding: "20px", borderRadius: "10px", width: "90%", maxWidth: "300px", boxShadow: "0 5px 15px rgba(0,0,0,0.3)" }}>
-                <h3 style={{marginTop: 0, color: "#e74c3c"}}>💸 Add New Expense</h3>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1100 }}>
+            <div style={{ background: "white", padding: "20px", borderRadius: "20px", width: "320px", margin: "20px" }}>
+                <h3 style={{marginTop: 0, color: "#333", marginBottom: "15px"}}>💸 Add Expense</h3>
                 <form onSubmit={handleAddExpense}>
-                    <label style={{fontWeight: "bold", display:"block", marginBottom:"5px"}}>Item Name:</label>
-                    <input placeholder="Ex: Chai, Bill, Rent" value={newExpense.title} onChange={e => setNewExpense({...newExpense, title: e.target.value})} style={{width: "100%", padding: "8px", margin: "0 0 10px", border:"1px solid #ccc", boxSizing: "border-box"}} required />
-                    
-                    <label style={{fontWeight: "bold", display:"block", marginBottom:"5px"}}>Amount (₹):</label>
-                    <input type="number" placeholder="0" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} style={{width: "100%", padding: "8px", margin: "0 0 10px", border:"1px solid #ccc", boxSizing: "border-box"}} required />
-                    
-                    <label style={{fontWeight: "bold", display:"block", marginBottom:"5px"}}>Category:</label>
-                    <select value={newExpense.category} onChange={e => setNewExpense({...newExpense, category: e.target.value})} style={{width: "100%", padding: "8px", margin: "0 0 15px", border: "1px solid #ccc", backgroundColor: "white", color: "black", boxSizing: "border-box"}}>
-                        <option value="Office">Office</option>
-                        <option value="Salary">Salary</option>
-                        <option value="Rent">Rent</option>
-                        <option value="Refreshment">Refreshment</option>
-                        <option value="Other">Other</option>
+                    <input placeholder="Item Name" value={newExpense.title} onChange={e => setNewExpense({...newExpense, title: e.target.value})} style={{width: "100%", padding: "10px", marginBottom: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing:"border-box"}} required />
+                    <input type="number" placeholder="Amount (₹)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} style={{width: "100%", padding: "10px", marginBottom: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing:"border-box"}} required />
+                    <select value={newExpense.category} onChange={e => setNewExpense({...newExpense, category: e.target.value})} style={{width: "100%", padding: "10px", marginBottom: "15px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "white", boxSizing:"border-box"}}>
+                        <option>Office</option><option>Salary</option><option>Rent</option><option>Other</option>
                     </select>
-                    
-                    <button type="submit" style={{width: "100%", padding: "10px", background: "#e74c3c", color: "white", border: "none", borderRadius: "5px", cursor: "pointer", fontWeight: "bold"}}>Save Expense</button>
-                    <button type="button" onClick={() => setShowExpenseForm(false)} style={{width: "100%", padding: "10px", background: "#7f8c8d", color: "white", border: "none", borderRadius: "5px", marginTop: "10px", cursor: "pointer"}}>Cancel</button>
+                    <button type="submit" style={{width: "100%", background: "#1e293b", color: "white", padding: "10px", borderRadius: "8px", border: "none", fontWeight: "bold", cursor: "pointer"}}>Save</button>
+                    <button type="button" onClick={() => setShowExpenseForm(false)} style={{width: "100%", background: "transparent", color: "#64748b", padding: "10px", marginTop: "5px", border: "none", cursor: "pointer"}}>Cancel</button>
                 </form>
             </div>
         </div>
       )}
 
-      {/* ... Expense History Popup ... */}
       {viewExpenseHistory && (
         <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1100 }}>
             <div style={{ background: "white", padding: "20px", borderRadius: "10px", width: "90%", maxWidth: "500px", boxShadow: "0 5px 15px rgba(0,0,0,0.3)" }}>
@@ -258,7 +316,6 @@ function Dashboard() {
         </div>
       )}
 
-      {/* ... Student Detail Popup ... */}
       {viewStudent && (
         <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.7)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
             <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "10px", width: "90%", maxWidth: "500px", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
