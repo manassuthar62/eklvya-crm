@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+// 👇 AAPKA LIVE BACKEND URL
+const BASE_URL = "https://eklvya-crm.onrender.com/api";
+
 function Dashboard() {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
@@ -36,14 +39,15 @@ function Dashboard() {
 
   const loadData = async () => {
     try {
-      const resStd = await axios.get('http://localhost:5000/api/student/all');
-      const resExp = await axios.get('http://localhost:5000/api/expense/all');
+      // ✅ LOCALHOST BADAL DIYA
+      const resStd = await axios.get(`${BASE_URL}/student/all`);
+      const resExp = await axios.get(`${BASE_URL}/expense/all`);
       
       setStudents(resStd.data);
       setExpenses(resExp.data);
       
       calculateDailyStats(resStd.data, resExp.data, selectedDate);
-    } catch (error) { console.log("Error loading data"); }
+    } catch (error) { console.log("Error loading data from Render"); }
   };
 
   const calculateDailyStats = (stdData, expData, dateToCheck) => {
@@ -87,7 +91,8 @@ function Dashboard() {
     if(!newExpense.title || !newExpense.amount) return alert("Detail bharo!");
     
     try {
-        await axios.post('http://localhost:5000/api/expense/add', {
+        // ✅ LOCALHOST BADAL DIYA
+        await axios.post(`${BASE_URL}/expense/add`, {
             ...newExpense,
             date: selectedDate
         });
@@ -100,7 +105,8 @@ function Dashboard() {
 
   const handleApprove = async (id) => {
     if(window.confirm("Approve discount?")) {
-        await axios.put(`http://localhost:5000/api/student/approve/${id}`);
+        // ✅ LOCALHOST BADAL DIYA
+        await axios.put(`${BASE_URL}/student/approve/${id}`);
         loadData();
     }
   };
@@ -129,7 +135,6 @@ function Dashboard() {
       <div style={{ display: "flex", gap: "15px", marginBottom: "20px", flexWrap: "wrap" }}>
         <Card title="💰 Cash Collection" value={`₹${stats.dayCollection}`} color="#f1c40f" sub="Total money in" highlight />
         
-        {/* CLICKABLE EXPENSE CARD */}
         <div onClick={() => setViewExpenseHistory(true)} style={{cursor: "pointer", flex: 1}}>
             <Card title="💸 Total Expense (Click)" value={`₹${stats.dayExpense}`} color="#e74c3c" sub="Click to see details" />
         </div>
@@ -175,7 +180,8 @@ function Dashboard() {
         </table>
       </div>
 
-      {/* 👇 1. ADD EXPENSE POPUP FORM */}
+      {/* POPUPS (Expense Form, History, Student Detail) - Same UI logic as your original code */}
+      {/* ... Add Expense Popup ... */}
       {showExpenseForm && (
         <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1100 }}>
             <div style={{ background: "white", padding: "20px", borderRadius: "10px", width: "300px", boxShadow: "0 5px 15px rgba(0,0,0,0.3)" }}>
@@ -188,11 +194,7 @@ function Dashboard() {
                     <input type="number" placeholder="0" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} style={{width: "100%", padding: "8px", margin: "0 0 10px", border:"1px solid #ccc"}} required />
                     
                     <label style={{fontWeight: "bold", display:"block", marginBottom:"5px"}}>Category:</label>
-                    <select 
-                        value={newExpense.category} 
-                        onChange={e => setNewExpense({...newExpense, category: e.target.value})} 
-                        style={{width: "100%", padding: "8px", margin: "0 0 15px", border: "1px solid #ccc", backgroundColor: "white", color: "black"}}
-                    >
+                    <select value={newExpense.category} onChange={e => setNewExpense({...newExpense, category: e.target.value})} style={{width: "100%", padding: "8px", margin: "0 0 15px", border: "1px solid #ccc", backgroundColor: "white", color: "black"}}>
                         <option value="Office">Office</option>
                         <option value="Salary">Salary</option>
                         <option value="Rent">Rent</option>
@@ -207,7 +209,7 @@ function Dashboard() {
         </div>
       )}
 
-      {/* 👇 2. VIEW EXPENSE LIST POPUP (Updated with Date) */}
+      {/* ... Expense History Popup ... */}
       {viewExpenseHistory && (
         <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1100 }}>
             <div style={{ background: "white", padding: "20px", borderRadius: "10px", width: "500px", boxShadow: "0 5px 15px rgba(0,0,0,0.3)" }}>
@@ -215,46 +217,34 @@ function Dashboard() {
                     <h3 style={{margin: 0, color: "#e74c3c"}}>📉 Expenses on {selectedDate}</h3>
                     <button onClick={() => setViewExpenseHistory(false)} style={{background: "red", color: "white", border: "none", borderRadius: "50%", width: "25px", height: "25px", cursor: "pointer"}}>X</button>
                 </div>
-                
                 {expenses.filter(e => new Date(e.date).toISOString().split('T')[0] === selectedDate).length > 0 ? (
                     <table border="1" style={{width: "100%", borderCollapse: "collapse"}}>
                         <thead style={{background: "#eee"}}>
-                            <tr>
-                                <th style={{padding: "5px"}}>Item</th>
-                                <th style={{padding: "5px"}}>Category</th>
-                                <th style={{padding: "5px"}}>Date</th> {/* NEW HEADER */}
-                                <th style={{padding: "5px"}}>Amount</th>
-                            </tr>
+                            <tr><th style={{padding: "5px"}}>Item</th><th style={{padding: "5px"}}>Category</th><th style={{padding: "5px"}}>Date</th><th style={{padding: "5px"}}>Amount</th></tr>
                         </thead>
                         <tbody>
                             {expenses.filter(e => new Date(e.date).toISOString().split('T')[0] === selectedDate).map(exp => (
                                 <tr key={exp._id}>
                                     <td style={{padding: "5px"}}>{exp.title}</td>
                                     <td style={{padding: "5px"}}>{exp.category}</td>
-                                    <td style={{padding: "5px"}}>{new Date(exp.date).toLocaleDateString()}</td> {/* NEW DATA */}
+                                    <td style={{padding: "5px"}}>{new Date(exp.date).toLocaleDateString()}</td>
                                     <td style={{padding: "5px", fontWeight: "bold", color: "red"}}>₹{exp.amount}</td>
                                 </tr>
                             ))}
-                            <tr style={{background: "#ffebeb"}}>
-                                <td colSpan="3" style={{padding: "5px", fontWeight: "bold", textAlign: "right"}}>Total:</td>
-                                <td style={{padding: "5px", fontWeight: "bold", color: "red"}}>₹{stats.dayExpense}</td>
-                            </tr>
+                            <tr style={{background: "#ffebeb"}}><td colSpan="3" style={{padding: "5px", fontWeight: "bold", textAlign: "right"}}>Total:</td><td style={{padding: "5px", fontWeight: "bold", color: "red"}}>₹{stats.dayExpense}</td></tr>
                         </tbody>
                     </table>
-                ) : (
-                    <p style={{textAlign: "center", color: "gray"}}>Aaj koi kharcha nahi hua! 🎉</p>
-                )}
+                ) : ( <p style={{textAlign: "center", color: "gray"}}>Aaj koi kharcha nahi hua! 🎉</p> )}
             </div>
         </div>
       )}
 
-      {/* 👇 3. STUDENT DETAIL POPUP */}
+      {/* ... Student Detail Popup ... */}
       {viewStudent && (
         <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.7)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
             <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "10px", width: "500px", maxWidth: "90%", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
                 <button onClick={() => setViewStudent(null)} style={{ position: "absolute", top: "10px", right: "10px", background: "red", color: "white", border: "none", borderRadius: "50%", width: "30px", height: "30px", cursor: "pointer" }}>X</button>
                 <h2 style={{ borderBottom: "2px solid #3498db", paddingBottom: "10px", color: "#2c3e50" }}>👤 Student Profile</h2>
-                
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "20px" }}>
                     <div><strong>Name:</strong> {viewStudent.name}</div>
                     <div><strong>Father:</strong> {viewStudent.fatherName}</div>
@@ -265,7 +255,6 @@ function Dashboard() {
                     <div style={{color: "purple"}}><strong>Admission By:</strong> {viewStudent.addedBy || "Staff Panel"}</div>
                     <div style={{color: "blue"}}><strong>Joined:</strong> {new Date(viewStudent.admissionDate).toLocaleDateString()}</div>
                 </div>
-
                 <div style={{ backgroundColor: "#f9f9f9", padding: "10px", borderRadius: "5px", marginBottom: "20px" }}>
                     <h3 style={{marginTop: 0}}>💰 Fees Summary</h3>
                     <p>Total Fee: ₹{viewStudent.fees.totalFee} | Discount: ₹{viewStudent.fees.discount}</p>
@@ -273,13 +262,10 @@ function Dashboard() {
                     <p style={{color: "green"}}>Paid: ₹{viewStudent.fees.paidAmount}</p>
                     <p style={{color: "red"}}>Balance: ₹{viewStudent.fees.finalFee - viewStudent.fees.paidAmount}</p>
                 </div>
-
                 <h3 style={{marginTop: 0}}>📜 Payment History</h3>
                 {viewStudent.paymentHistory.length > 0 ? (
                     <table border="1" style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px" }}>
-                        <thead style={{backgroundColor: "#eee"}}>
-                            <tr><th style={{padding: "5px"}}>Date</th><th style={{padding: "5px"}}>Amount</th><th style={{padding: "5px"}}>Remark</th></tr>
-                        </thead>
+                        <thead style={{backgroundColor: "#eee"}}><tr><th style={{padding: "5px"}}>Date</th><th style={{padding: "5px"}}>Amount</th><th style={{padding: "5px"}}>Remark</th></tr></thead>
                         <tbody>
                             {viewStudent.paymentHistory.map((pay, index) => (
                                 <tr key={index}>
@@ -299,7 +285,6 @@ function Dashboard() {
   );
 }
 
-// Simple Card Component
 function Card({ title, value, color, sub, highlight }) {
     return (
         <div style={{ padding: "20px", background: highlight ? "#f1c40f" : "white", borderRadius: "10px", flex: 1, boxShadow: "0 4px 8px rgba(0,0,0,0.1)", textAlign: "center", borderTop: `5px solid ${color}`, border: highlight ? "2px solid orange" : "none", minWidth: "200px" }}>

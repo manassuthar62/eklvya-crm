@@ -2,25 +2,24 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+// 👇 AAPKA LIVE LINK
+const API_URL = "https://eklvya-crm.onrender.com/api/student";
+
 function AdmissionForm() {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [selectedStudent, setSelectedStudent] = useState(null); 
   
-  // Login Staff ka naam nikalo
   const loggedInStaff = localStorage.getItem('staffUser'); 
 
-  // Payment Box State
   const [payAmount, setPayAmount] = useState('');
   const [payRemark, setPayRemark] = useState('');
 
-  // Form State
   const [student, setStudent] = useState({
     name: '', fatherName: '', dob: '', mobile: '', address: '', course: 'RSCIT', totalFee: 4200, discount: 0
   });
 
   useEffect(() => { 
-      // Agar login nahi hai to bhaga do
       if(!loggedInStaff) {
           navigate('/');
       } else {
@@ -28,13 +27,12 @@ function AdmissionForm() {
       }
   }, []);
 
-  // 👇 SIRF APNE STUDENTS LOAD KARO
   const loadMyStudents = async () => {
     try {
-      // API call change kar di: /my-students/rahul
-      const res = await axios.get(`http://localhost:5000/api/student/my-students/${loggedInStaff}`);
+      // ✅ LOCALHOST BADAL DIYA
+      const res = await axios.get(`${API_URL}/my-students/${loggedInStaff}`);
       setStudents(res.data);
-    } catch (error) { console.log("Err"); }
+    } catch (error) { console.log("Error loading students"); }
   };
 
   const handleChange = (e) => setStudent({ ...student, [e.target.name]: e.target.value });
@@ -42,22 +40,22 @@ function AdmissionForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      // Save karte waqt batao ki kisne add kiya (addedBy)
       const dataToSend = { ...student, addedBy: loggedInStaff };
       
-      await axios.post('http://localhost:5000/api/student/add', dataToSend);
+      // ✅ LOCALHOST BADAL DIYA
+      await axios.post(`${API_URL}/add`, dataToSend);
       alert('✅ Student Saved!');
-      loadMyStudents(); // List refresh
+      loadMyStudents(); 
       setStudent({ ...student, name: '', mobile: '' }); 
-    } catch (error) { alert('❌ Error'); }
+    } catch (error) { alert('❌ Error saving student'); }
   };
 
-  // Payment Logic (Same as before)
   const handlePaymentSubmit = async (e) => {
     e.preventDefault();
     if(!payAmount) return alert("Amount to likho!");
     try {
-        await axios.put(`http://localhost:5000/api/student/pay-amount/${selectedStudent}`, {
+        // ✅ LOCALHOST BADAL DIYA
+        await axios.put(`${API_URL}/pay-amount/${selectedStudent}`, {
             amount: payAmount,
             remark: payRemark
         });
@@ -79,9 +77,9 @@ function AdmissionForm() {
       <div style={{ border: "1px solid #ccc", padding: "15px", borderRadius: "10px", marginBottom: "20px", background: "#f9f9f9" }}>
         <h3>New Admission</h3>
         <form onSubmit={handleSubmit} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
-            <input name="name" placeholder="Name" onChange={handleChange} required style={{padding: "8px"}} />
+            <input name="name" placeholder="Name" value={student.name} onChange={handleChange} required style={{padding: "8px"}} />
             <input name="fatherName" placeholder="Father Name" onChange={handleChange} required style={{padding: "8px"}} />
-            <input name="mobile" type="number" placeholder="Mobile" onChange={handleChange} required style={{padding: "8px"}} />
+            <input name="mobile" type="number" placeholder="Mobile" value={student.mobile} onChange={handleChange} required style={{padding: "8px"}} />
             <input name="address" placeholder="Address" onChange={handleChange} required style={{padding: "8px"}} />
             <input name="dob" type="date" onChange={handleChange} required style={{padding: "8px"}} />
             <div style={{display: "flex", gap: "5px"}}>
@@ -93,7 +91,7 @@ function AdmissionForm() {
         </form>
       </div>
 
-      {/* --- LIST (Only My Students) --- */}
+      {/* --- LIST --- */}
       <h3>My Students List ({students.length})</h3>
       <table border="1" style={{ width: "100%", borderCollapse: "collapse" }}>
         <thead style={{ background: "#2c3e50", color: "white" }}>
@@ -124,7 +122,7 @@ function AdmissionForm() {
         </tbody>
       </table>
 
-      {/* Payment Popup Code Same as before... */}
+      {/* Payment Popup */}
       {selectedStudent && (
         <div style={{ position: "fixed", top: "0", left: "0", width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center" }}>
             <div style={{ background: "white", padding: "20px", borderRadius: "10px", width: "300px" }}>

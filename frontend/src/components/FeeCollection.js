@@ -2,17 +2,20 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+// 👇 AAPKA LIVE BACKEND URL
+const API_BASE_URL = "https://eklvya-crm.onrender.com/api/student";
+
 function FeeCollection() {
   const [mobile, setMobile] = useState('');
-  const [student, setStudent] = useState(null); // Yahan student ka data ayega
+  const [student, setStudent] = useState(null); 
   const navigate = useNavigate();
 
   // 1. Mobile Number se Student dhundna
   const handleSearch = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.get('http://localhost:5000/api/student/all');
-      // Filter karke dhundenge (Simple logic)
+      // ✅ LOCALHOST BADAL DIYA
+      const response = await axios.get(`${API_BASE_URL}/all`);
       const foundStudent = response.data.find(s => s.mobile === mobile);
       
       if (foundStudent) {
@@ -22,7 +25,7 @@ function FeeCollection() {
         setStudent(null);
       }
     } catch (error) {
-      alert("Error searching student");
+      alert("Error searching student on live server");
     }
   };
 
@@ -30,10 +33,10 @@ function FeeCollection() {
   const handlePay = async (emiIndex) => {
     if(window.confirm("Kya aap payment collect kar rahe hain?")) {
         try {
-            await axios.put(`http://localhost:5000/api/student/pay-emi/${student._id}`, { emiIndex });
+            // ✅ LOCALHOST BADAL DIYA
+            await axios.put(`${API_BASE_URL}/pay-emi/${student._id}`, { emiIndex });
             alert("✅ Payment Successful! Receipt Generated.");
             
-            // Screen ko refresh karo taaki 'Paid' dikhe
             const updatedStudent = { ...student };
             updatedStudent.emis[emiIndex].status = "Paid";
             setStudent(updatedStudent);

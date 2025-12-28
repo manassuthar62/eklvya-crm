@@ -2,6 +2,9 @@ import { useState, useEffect } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
+// 👇 AAPKA LIVE BACKEND URL
+const API_BASE_URL = "https://eklvya-crm.onrender.com/api/staff";
+
 function StaffManager() {
   const navigate = useNavigate();
   const [staffs, setStaffs] = useState([]);
@@ -10,22 +13,37 @@ function StaffManager() {
   useEffect(() => { loadStaffs(); }, []);
 
   const loadStaffs = async () => {
-    const res = await axios.get('http://localhost:5000/api/staff/all');
-    setStaffs(res.data);
+    try {
+      // ✅ LOCALHOST BADAL DIYA
+      const res = await axios.get(`${API_BASE_URL}/all`);
+      setStaffs(res.data);
+    } catch (error) {
+      console.log("Error loading staff data");
+    }
   };
 
   const handleAdd = async () => {
     if(!newStaff.name || !newStaff.username || !newStaff.password) return alert("Sab bharna jaruri hai");
-    await axios.post('http://localhost:5000/api/staff/add', newStaff);
-    alert("✅ Staff Added!");
-    setNewStaff({ name: '', username: '', password: '' });
-    loadStaffs();
+    try {
+      // ✅ LOCALHOST BADAL DIYA
+      await axios.post(`${API_BASE_URL}/add`, newStaff);
+      alert("✅ Staff Added!");
+      setNewStaff({ name: '', username: '', password: '' });
+      loadStaffs();
+    } catch (error) {
+      alert("Error adding staff account");
+    }
   };
 
   const handleDelete = async (id) => {
     if(window.confirm("Is Staff ko delete kar dein?")) {
-        await axios.delete(`http://localhost:5000/api/staff/delete/${id}`);
-        loadStaffs();
+        try {
+          // ✅ LOCALHOST BADAL DIYA
+          await axios.delete(`${API_BASE_URL}/delete/${id}`);
+          loadStaffs();
+        } catch (error) {
+          alert("Error deleting staff account");
+        }
     }
   };
 

@@ -17,7 +17,7 @@ function Login() {
 
     // 2. STAFF CHECK
     try {
-        const res = await axios.post('http://localhost:5000/api/staff/login', { username, password });
+        const res = await axios.post('http:https://eklvya-crm.onrender.com', { username, password });
         
         if (res.data.success) {
             alert(`👨‍💼 Welcome ${res.data.name}!`);
