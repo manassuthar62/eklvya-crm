@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-// 👇 AAPKA LIVE BACKEND URL
+// 👇 LIVE SERVER LINK (Yahi link hona chahiye)
 const BASE_URL = "https://eklvya-crm.onrender.com/api";
 
 function Dashboard() {
@@ -39,7 +39,6 @@ function Dashboard() {
 
   const loadData = async () => {
     try {
-      // ✅ LOCALHOST BADAL DIYA
       const resStd = await axios.get(`${BASE_URL}/student/all`);
       const resExp = await axios.get(`${BASE_URL}/expense/all`);
       
@@ -48,6 +47,19 @@ function Dashboard() {
       
       calculateDailyStats(resStd.data, resExp.data, selectedDate);
     } catch (error) { console.log("Error loading data from Render"); }
+  };
+
+  // 👇 DELETE FUNCTION (NEW)
+  const handleDeleteStudent = async (id) => {
+    if(window.confirm("⚠️ WARNING: Kya aap is student ko HAMESHA ke liye delete karna chahte hain?")) {
+        try {
+            await axios.delete(`${BASE_URL}/student/delete/${id}`);
+            alert("🗑️ Student Deleted!");
+            loadData(); // List refresh
+        } catch (error) {
+            alert("Error deleting student");
+        }
+    }
   };
 
   const calculateDailyStats = (stdData, expData, dateToCheck) => {
@@ -91,7 +103,6 @@ function Dashboard() {
     if(!newExpense.title || !newExpense.amount) return alert("Detail bharo!");
     
     try {
-        // ✅ LOCALHOST BADAL DIYA
         await axios.post(`${BASE_URL}/expense/add`, {
             ...newExpense,
             date: selectedDate
@@ -105,7 +116,6 @@ function Dashboard() {
 
   const handleApprove = async (id) => {
     if(window.confirm("Approve discount?")) {
-        // ✅ LOCALHOST BADAL DIYA
         await axios.put(`${BASE_URL}/student/approve/${id}`);
         loadData();
     }
@@ -154,7 +164,7 @@ function Dashboard() {
                     <th>Mobile</th>
                     <th>Paid</th>
                     <th>Balance</th>
-                    <th>Status (Click for Details)</th>
+                    <th>Status / Action</th>
                 </tr>
             </thead>
             <tbody>
@@ -167,12 +177,16 @@ function Dashboard() {
                         <td>{std.mobile}</td>
                         <td style={{color: "green", fontWeight: "bold"}}>₹{std.fees.paidAmount}</td>
                         <td style={{color: "red", fontWeight: "bold"}}>₹{std.fees.finalFee - std.fees.paidAmount}</td>
-                        <td style={{cursor: "pointer"}}>
+                        <td style={{padding: "8px"}}>
+                            {/* APPROVE / VIEW BUTTON */}
                             {!std.approval.isApproved ? (
-                                <button onClick={() => handleApprove(std._id)} style={{background: "green", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px"}}>Approve</button>
+                                <button onClick={() => handleApprove(std._id)} style={{background: "green", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px", marginRight: "5px"}}>Approve</button>
                             ) : (
-                                <span onClick={() => setViewStudent(std)} style={{color: "#27ae60", fontWeight: "bold", textDecoration: "underline", cursor: "pointer"}}>Active 👁️</span>
+                                <button onClick={() => setViewStudent(std)} style={{background: "#27ae60", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px", marginRight: "5px"}}>View 👁️</button>
                             )}
+
+                            {/* 👇 DELETE BUTTON (NEW) */}
+                            <button onClick={() => handleDeleteStudent(std._id)} style={{background: "red", color: "white", border: "none", padding: "5px 10px", borderRadius: "4px", cursor: "pointer"}}>Delete 🗑️</button>
                         </td>
                     </tr>
                 ))}

@@ -18,7 +18,7 @@ router.post('/add', async (req, res) => {
             emis: emis || [],
             paymentHistory: [],
             admissionDate: new Date(),
-            addedBy: addedBy || 'Admin' // 👇 Kisne add kiya wo save hoga
+            addedBy: addedBy || 'Admin' 
         });
 
         await newStudent.save();
@@ -38,11 +38,10 @@ router.get('/all', async (req, res) => {
     }
 });
 
-// 3. 👇 NAYA RASTA: GET MY STUDENTS (Sirf login staff ka data)
+// 3. GET MY STUDENTS (Sirf login staff ka data)
 router.get('/my-students/:staffName', async (req, res) => {
     try {
         const staffName = req.params.staffName;
-        // Database me dhundo jaha 'addedBy' match kare
         const students = await Student.find({ addedBy: staffName });
         res.status(200).json(students);
     } catch (error) {
@@ -82,6 +81,20 @@ router.put('/approve/:id', async (req, res) => {
         res.status(200).json({ message: "Approved!" });
     } catch (error) {
         res.status(500).json({ message: "Error" });
+    }
+});
+
+// 👇 6. DELETE STUDENT (YEH NAYA HAI)
+router.delete('/delete/:id', async (req, res) => {
+    try {
+        const deletedStudent = await Student.findByIdAndDelete(req.params.id);
+        if (!deletedStudent) {
+            return res.status(404).json({ success: false, message: "Student nahi mila" });
+        }
+        res.json({ success: true, message: "Student Deleted Successfully" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: "Error deleting student" });
     }
 });
 
