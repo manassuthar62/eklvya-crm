@@ -17,7 +17,8 @@ function Login() {
 
     // 2. STAFF CHECK
     try {
-        const res = await axios.post('http:https://eklvya-crm.onrender.com', { username, password });
+        // ✅ URL THEEK KAR DIYA HAI (Correct Link)
+        const res = await axios.post('https://eklvya-crm.onrender.com/api/staff/login', { username, password });
         
         if (res.data.success) {
             alert(`👨‍💼 Welcome ${res.data.name}!`);
@@ -30,7 +31,8 @@ function Login() {
             alert('❌ Galat ID ya Password!');
         }
     } catch (error) {
-        alert('❌ Login Failed');
+        console.error("Login Error:", error);
+        alert('❌ Login Failed. Check Internet or details.');
     }
   };
 
