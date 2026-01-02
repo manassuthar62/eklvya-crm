@@ -54,7 +54,7 @@ function Dashboard() {
         try {
             await axios.delete(`${BASE_URL}/student/delete/${id}`);
             alert("🗑️ Student Deleted!");
-            setViewStudent(null); // Agar popup khula hai to band kar do
+            setViewStudent(null); // Close popup if open
             loadData(); 
         } catch (error) {
             alert("Error deleting student");
@@ -78,10 +78,10 @@ function Dashboard() {
     try {
         const res = await axios.put(`${BASE_URL}/student/toggle-online/${student._id}`);
         if(res.data.success) {
-            // Local update taaki turant dikhe
+            // Local update for immediate feedback
             const updatedStudent = { ...student, isOnlineSubmitted: !student.isOnlineSubmitted };
-            setViewStudent(updatedStudent); // Popup update
-            loadData(); // Table update
+            setViewStudent(updatedStudent); // Update popup
+            loadData(); // Update table
         }
     } catch (error) { alert("Error updating status"); }
   };
@@ -328,7 +328,7 @@ function Dashboard() {
         </div>
       )}
 
-      {/* 👇 UPDATED STUDENT DETAIL POPUP (STATUS, EDIT, DELETE) */}
+      {/* 👇 UPDATED STUDENT DETAIL POPUP */}
       {viewStudent && (
         <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.7)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
             <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "10px", width: "90%", maxWidth: "500px", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>

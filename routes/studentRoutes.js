@@ -116,5 +116,15 @@ router.delete('/delete/:id', async (req, res) => {
         res.status(500).json({ success: false, message: "Error deleting student" });
     }
 });
-
+// 👇 UPDATE STUDENT DETAILS (Edit karne ke liye)
+router.put('/update/:id', async (req, res) => {
+    try {
+        // Sirf wahi data update hoga jo bhejoge (Name, Mobile, etc.)
+        await Student.findByIdAndUpdate(req.params.id, req.body);
+        res.json({ success: true, message: "Student Updated Successfully!" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ success: false, message: "Error updating student" });
+    }
+});
 module.exports = router;
