@@ -411,7 +411,12 @@ function Dashboard() {
 
                     <div style={{display: "flex", gap: "10px"}}>
                         {/* 2. EDIT BUTTON */}
-                        <button onClick={() => alert("Edit Feature Coming Soon!")} style={{flex: 1, padding: "10px", background: "#3498db", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold"}}>✏️ Edit</button>
+<button
+  onClick={() => setEditStudent(viewStudent)}
+  style={{flex: 1, padding: "10px", background: "#3498db", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold"}}
+>
+  ✏️ Edit
+</button>
                         
                         {/* 3. DELETE BUTTON */}
                         <button onClick={() => handleDeleteStudent(viewStudent._id)} style={{flex: 1, padding: "10px", background: "#e74c3c", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold"}}>🗑️ Delete</button>
