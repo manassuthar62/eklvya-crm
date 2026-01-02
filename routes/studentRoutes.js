@@ -2,7 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Student = require('../models/Student');
 
-// 1. ADD STUDENT (Staff ka naam save karega)
+// 1. ADD STUDENT
 router.post('/add', async (req, res) => {
     try {
         const { name, fatherName, dob, mobile, address, course, totalFee, discount, emis, addedBy } = req.body;
@@ -18,7 +18,8 @@ router.post('/add', async (req, res) => {
             emis: emis || [],
             paymentHistory: [],
             admissionDate: new Date(),
-            addedBy: addedBy || 'Admin' 
+            addedBy: addedBy || 'Admin',
+            isOnlineSubmitted: false // Default Pending rahega
         });
 
         await newStudent.save();
@@ -28,7 +29,7 @@ router.post('/add', async (req, res) => {
     }
 });
 
-// 2. GET ALL (Sirf Admin ke liye - Sab dikhega)
+// 2. GET ALL
 router.get('/all', async (req, res) => {
     try {
         const students = await Student.find();
@@ -38,7 +39,7 @@ router.get('/all', async (req, res) => {
     }
 });
 
-// 3. GET MY STUDENTS (Sirf login staff ka data)
+// 3. GET MY STUDENTS
 router.get('/my-students/:staffName', async (req, res) => {
     try {
         const staffName = req.params.staffName;
@@ -84,7 +85,25 @@ router.put('/approve/:id', async (req, res) => {
     }
 });
 
-// 👇 6. DELETE STUDENT (YEH NAYA HAI)
+// 👇 6. TOGGLE ONLINE FORM STATUS (NAYA FEATURE)
+router.put('/toggle-online/:id', async (req, res) => {
+    try {
+        const student = await Student.findById(req.params.id);
+        if (student) {
+            // Jo bhi status hai, uska ulta (Pending <-> Done) kar do
+            student.isOnlineSubmitted = !student.isOnlineSubmitted;
+            await student.save();
+            res.json({ success: true, status: student.isOnlineSubmitted });
+        } else {
+            res.status(404).json({ message: "Student not found" });
+        }
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Error updating status" });
+    }
+});
+
+// 7. DELETE STUDENT
 router.delete('/delete/:id', async (req, res) => {
     try {
         const deletedStudent = await Student.findByIdAndDelete(req.params.id);

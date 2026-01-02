@@ -33,8 +33,10 @@ const studentSchema = new mongoose.Schema({
 
     admissionDate: { type: Date, default: Date.now },
     
-    // 👇 NAYA FIELD: Kisne add kiya
-    addedBy: { type: String, default: 'Staff Panel' } 
+    addedBy: { type: String, default: 'Staff Panel' },
+
+    // 👇 NAYA FIELD: Govt Form Status (Pending / Done)
+    isOnlineSubmitted: { type: Boolean, default: false } 
 });
 
 module.exports = mongoose.model('Student', studentSchema);
