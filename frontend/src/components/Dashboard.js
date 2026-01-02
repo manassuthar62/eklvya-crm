@@ -54,7 +54,7 @@ function Dashboard() {
         try {
             await axios.delete(`${BASE_URL}/student/delete/${id}`);
             alert("🗑️ Student Deleted!");
-            setViewStudent(null); // Close popup if open
+            setViewStudent(null); // Agar popup khula hai to band kar do
             loadData(); 
         } catch (error) {
             alert("Error deleting student");
@@ -78,10 +78,10 @@ function Dashboard() {
     try {
         const res = await axios.put(`${BASE_URL}/student/toggle-online/${student._id}`);
         if(res.data.success) {
-            // Local update for immediate feedback
+            // Local update taaki turant dikhe
             const updatedStudent = { ...student, isOnlineSubmitted: !student.isOnlineSubmitted };
-            setViewStudent(updatedStudent); // Update popup
-            loadData(); // Update table
+            setViewStudent(updatedStudent); // Popup update
+            loadData(); // Table update
         }
     } catch (error) { alert("Error updating status"); }
   };
@@ -328,7 +328,7 @@ function Dashboard() {
         </div>
       )}
 
-      {/* 👇 UPDATED STUDENT DETAIL POPUP */}
+      {/* 👇 UPDATED STUDENT DETAIL POPUP (STATUS, EDIT, DELETE) */}
       {viewStudent && (
         <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.7)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
             <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "10px", width: "90%", maxWidth: "500px", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
@@ -411,11 +411,7 @@ function Dashboard() {
 
                     <div style={{display: "flex", gap: "10px"}}>
                         {/* 2. EDIT BUTTON */}
-                        <button
-                       onClick={() => setEditStudent(viewStudent)}
-                       style={{flex: 1, padding: "10px", background: "#3498db", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold"}}
-                                             >✏️ Edit</button>
-
+                        <button onClick={() => alert("Edit Feature Coming Soon!")} style={{flex: 1, padding: "10px", background: "#3498db", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold"}}>✏️ Edit</button>
                         
                         {/* 3. DELETE BUTTON */}
                         <button onClick={() => handleDeleteStudent(viewStudent._id)} style={{flex: 1, padding: "10px", background: "#e74c3c", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold"}}>🗑️ Delete</button>
