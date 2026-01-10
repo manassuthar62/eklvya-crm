@@ -10,11 +10,12 @@ function Dashboard() {
   const [students, setStudents] = useState([]);
   const [expenses, setExpenses] = useState([]); 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [currentTime, setCurrentTime] = useState(new Date()); // 🕒 Clock State
   
   // POPUP & EDIT STATE
   const [viewStudent, setViewStudent] = useState(null); 
-  const [isEditing, setIsEditing] = useState(false); // 👈 Edit Mode State
-  const [editFormData, setEditFormData] = useState({}); // 👈 Data store karne ke liye
+  const [isEditing, setIsEditing] = useState(false); 
+  const [editFormData, setEditFormData] = useState({}); 
 
   const [showExpenseForm, setShowExpenseForm] = useState(false); 
   const [viewExpenseHistory, setViewExpenseHistory] = useState(false); 
@@ -23,6 +24,12 @@ function Dashboard() {
   const [stats, setStats] = useState({
     dayAdmissions: 0, dayCollection: 0, dayExpense: 0, netProfit: 0, totalPending: 0 
   });
+
+  // 🕒 Live Clock Effect
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   useEffect(() => { loadData(); }, []);
   useEffect(() => { 
@@ -39,27 +46,22 @@ function Dashboard() {
     } catch (error) { console.log("Error loading data"); }
   };
 
-  // 👇 POPUP KHOLNE KA FUNCTION (Edit data reset karega)
   const openStudentPopup = (std) => {
     setViewStudent(std);
-    setEditFormData(std); // Edit ke liye data copy kiya
-    setIsEditing(false); // Shuru me edit mode band
+    setEditFormData(std); 
+    setIsEditing(false); 
   };
 
-  // 👇 SAVE CHANGES FUNCTION (Yeh Data Update Karega)
   const handleSaveChanges = async () => {
     try {
         await axios.put(`${BASE_URL}/student/update/${viewStudent._id}`, editFormData);
         alert("✅ Data Updated Successfully!");
         setIsEditing(false);
-        setViewStudent(editFormData); // Popup me naya data dikhao
-        loadData(); // Table refresh karo
-    } catch (error) {
-        alert("❌ Error updating data");
-    }
+        setViewStudent(editFormData); 
+        loadData(); 
+    } catch (error) { alert("❌ Error updating data"); }
   };
 
-  // 👇 INPUT CHANGE HANDLER
   const handleEditChange = (e) => {
     setEditFormData({ ...editFormData, [e.target.name]: e.target.value });
   };
@@ -149,214 +151,255 @@ function Dashboard() {
     }
   };
 
-  // STYLES
+  // --- 🎨 RKCL INSPIRED STYLES ---
   const styles = {
-    container: { maxWidth: "1200px", margin: "0 auto", padding: "10px", fontFamily: "'Segoe UI', sans-serif" },
-    header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", background: "white", padding: "15px", borderRadius: "15px", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", flexWrap: "wrap", gap: "15px" },
-    card: { background: "white", padding: "20px", borderRadius: "16px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)", textAlign: "center", flex: 1, minWidth: "150px" },
-    tableHeader: { background: "#f8fafc", color: "#64748b", fontWeight: "600", padding: "12px", fontSize: "13px", textAlign: "left" },
-    tableCell: { padding: "12px", borderBottom: "1px solid #f1f5f9", fontSize: "14px" },
-    btnAction: { padding: "5px 10px", borderRadius: "6px", border: "none", cursor: "pointer", fontSize: "12px", fontWeight: "bold", marginLeft: "5px" },
-    input: { width: "100%", padding: "8px", border: "1px solid #3b82f6", borderRadius: "5px", marginBottom: "5px", fontSize: "14px", boxSizing: "border-box", background: "#eff6ff" }
+    body: { fontFamily: "'Segoe UI', sans-serif", background: "#f8f9fa", minHeight: "100vh" },
+    
+    // 1. TOP BAR (WHITE)
+    topBar: { background: "white", padding: "15px 40px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #ddd" },
+    logoText: { fontSize: "22px", fontWeight: "bold", color: "#0d47a1", textTransform: "uppercase" },
+    topControls: { display: "flex", alignItems: "center", gap: "20px" },
+    dateInput: { padding: "8px", border: "1px solid #ccc", borderRadius: "4px", outline: "none", fontSize: "14px" },
+    logoutBtn: { background: "#dc3545", color: "white", padding: "8px 15px", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "13px", fontWeight: "bold" },
+
+    // 2. NAV BAR (BLUE)
+    navBar: { background: "#2196f3", padding: "0 40px", display: "flex", alignItems: "center", height: "50px", overflowX: "auto", boxShadow: "0 2px 5px rgba(0,0,0,0.1)" },
+    navLink: { color: "white", textDecoration: "none", padding: "0 20px", height: "100%", display: "flex", alignItems: "center", fontSize: "14px", fontWeight: "600", cursor: "pointer", borderRight: "1px solid rgba(255,255,255,0.2)" },
+
+    // 3. MAIN CONTENT
+    content: { maxWidth: "1200px", margin: "20px auto", padding: "0 15px" },
+    
+    // 4. SHORTCUTS SECTION
+    sectionHeader: { background: "#2196f3", color: "white", padding: "10px 15px", fontSize: "16px", fontWeight: "bold", borderTopLeftRadius: "4px", borderTopRightRadius: "4px", display: "flex", alignItems: "center", gap: "10px", marginTop: "20px" },
+    shortcutsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px", background: "white", padding: "15px", border: "1px solid #ddd" },
+    
+    // Colorful Buttons
+    shortcutBtn: (color) => ({
+      background: color, color: "white", padding: "15px", borderRadius: "4px", textAlign: "center", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "90px", transition: "transform 0.2s"
+    }),
+    shortcutTitle: { fontSize: "13px", marginBottom: "5px", fontWeight: "bold", textTransform: "uppercase" },
+    shortcutValue: { fontSize: "20px", fontWeight: "bold" },
+
+    // 5. CLOCK SECTION
+    clockContainer: { background: "white", border: "1px solid #2196f3", color: "#333", padding: "20px", textAlign: "center", marginBottom: "10px", borderRadius: "0 0 4px 4px", borderTop: "none" },
+    clockTime: { fontSize: "42px", fontWeight: "bold", color: "#e67e22", textShadow: "1px 1px 2px rgba(0,0,0,0.1)" },
+    clockDate: { fontSize: "18px", fontWeight: "600", color: "#0d47a1" },
+
+    // 6. TABLE
+    tableContainer: { background: "white", border: "1px solid #ddd", borderTop: "none" },
+    tableHeader: { background: "#f8f9fa", color: "#495057", padding: "12px", borderBottom: "2px solid #dee2e6", textAlign: "left", fontSize: "13px", fontWeight: "bold" },
+    tableCell: { padding: "12px", borderBottom: "1px solid #dee2e6", fontSize: "14px", color: "#333" },
+    
+    // Popup
+    popupOverlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 },
+    popupBox: { background: "white", padding: "25px", borderRadius: "8px", width: "90%", maxWidth: "500px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" },
+    input: { width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", marginBottom: "10px", boxSizing: "border-box", background: "#f9f9f9" }
   };
 
   return (
-    <div style={styles.container}>
-      {/* HEADER */}
-      <div style={styles.header}>
-        <h2 style={{margin:0, color:"#1e293b"}}>🚀 Admin</h2>
-        <div style={{display:"flex", gap:"10px", flexWrap:"wrap"}}>
-            <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} style={{padding:"8px", borderRadius:"8px", border:"1px solid #ccc"}} />
-            <button onClick={handleDownloadReport} style={{...styles.btnAction, background:"#10b981", color:"white"}}>📥 Report</button>
-            <button onClick={() => setShowExpenseForm(true)} style={{...styles.btnAction, background:"#6366f1", color:"white"}}>+ Expense</button>
-            <button onClick={() => navigate('/admin/staff-manager')} style={{...styles.btnAction, background:"white", border:"1px solid #333"}}>Staff</button>
-            <button onClick={() => navigate('/')} style={{...styles.btnAction, background:"#ef4444", color:"white"}}>Logout</button>
+    <div style={styles.body}>
+      
+      {/* 1. TOP BAR (WHITE) */}
+      <div style={styles.topBar}>
+        <div style={styles.logoText}>🏫 Eklavya Education</div>
+        <div style={styles.topControls}>
+            <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} style={styles.dateInput} />
+            <button onClick={() => navigate('/')} style={styles.logoutBtn}>LOGOUT 🔒</button>
         </div>
       </div>
 
-      {/* STATS */}
-      <div style={{display:"flex", gap:"15px", flexWrap:"wrap", marginBottom:"20px"}}>
-        <div style={{...styles.card, borderTop:"4px solid #f59e0b"}}><h4>Cash In</h4><h2 style={{color:"#1e293b"}}>₹{stats.dayCollection}</h2></div>
-        <div onClick={()=>setViewExpenseHistory(true)} style={{...styles.card, borderTop:"4px solid #ef4444", cursor:"pointer"}}><h4>Expense</h4><h2 style={{color:"#ef4444"}}>₹{stats.dayExpense}</h2></div>
-        <div style={{...styles.card, borderTop:"4px solid #10b981"}}><h4>Profit</h4><h2 style={{color:"#10b981"}}>₹{stats.netProfit}</h2></div>
-        <div style={{...styles.card, borderTop:"4px solid #dc2626"}}><h4>Pending</h4><h2 style={{color:"#dc2626"}}>₹{stats.totalPending}</h2></div>
-        <div style={{...styles.card, borderTop:"4px solid #3b82f6"}}><h4>Admissions</h4><h2 style={{color:"#3b82f6"}}>{stats.dayAdmissions}</h2></div>
+      {/* 2. NAV BAR (BLUE) */}
+      <div style={styles.navBar}>
+        <div style={styles.navLink} onClick={() => window.location.reload()}>🏠 DASHBOARD</div>
+        <div style={styles.navLink} onClick={handleDownloadReport}>📥 REPORTS</div>
+        <div style={styles.navLink} onClick={() => setShowExpenseForm(true)}>💸 ADD EXPENSE</div>
+        <div style={styles.navLink} onClick={() => navigate('/admin/staff-manager')}>👥 STAFF</div>
       </div>
 
-      {/* TABLE */}
-      <div style={{background:"white", borderRadius:"16px", padding:"10px", overflowX:"auto"}}>
-        <h3 style={{margin:"10px"}}>📄 Students ({students.length})</h3>
-        <table style={{width:"100%", borderCollapse:"collapse", minWidth:"600px"}}>
-            <thead>
-                <tr><th style={styles.tableHeader}>Name</th><th style={styles.tableHeader}>Mobile</th><th style={styles.tableHeader}>Fees</th><th style={styles.tableHeader}>Action</th></tr>
-            </thead>
-            <tbody>
-                {students.map(std => (
-                    <tr key={std._id}>
-                        <td style={styles.tableCell}><strong>{std.name}</strong><br/><small style={{color:"gray"}}>{std.course}</small></td>
-                        <td style={styles.tableCell}>{std.mobile}</td>
-                        <td style={styles.tableCell}><span style={{color:"green"}}>Paid: ₹{std.fees.paidAmount}</span><br/><span style={{color:"red"}}>Bal: ₹{std.fees.finalFee - std.fees.paidAmount}</span></td>
-                        <td style={styles.tableCell}>
-                            {!std.approval.isApproved ? (
-                                <button onClick={()=>handleApprove(std._id)} style={{...styles.btnAction, background:"orange"}}>Approve</button>
-                            ) : (
-                                // 👇 Yaha change kiya hai function call
-                                <button onClick={()=>openStudentPopup(std)} style={{...styles.btnAction, background:"#dcfce7", color:"green"}}>View 👁️</button>
-                            )}
-                        </td>
+      {/* 3. MAIN CONTENT */}
+      <div style={styles.content}>
+        
+        {/* SHORTCUTS HEADER */}
+        <div style={styles.sectionHeader}>📌 Quick Shortcuts</div>
+        
+        {/* SHORTCUTS BUTTONS */}
+        <div style={styles.shortcutsGrid}>
+            <div style={styles.shortcutBtn("#dc3545")}> {/* Red */}
+                <span style={styles.shortcutTitle}>TOTAL EXPENSE</span>
+                <span style={styles.shortcutValue} onClick={()=>setViewExpenseHistory(true)}>₹{stats.dayExpense}</span>
+            </div>
+            
+            <div style={styles.shortcutBtn("#ffc107")}> {/* Yellow */}
+                <span style={{...styles.shortcutTitle, color: "black"}}>CASH COLLECTION</span>
+                <span style={{...styles.shortcutValue, color: "black"}}>₹{stats.dayCollection}</span>
+            </div>
+
+            <div style={styles.shortcutBtn("#28a745")}> {/* Green */}
+                <span style={styles.shortcutTitle}>NET PROFIT</span>
+                <span style={styles.shortcutValue}>₹{stats.netProfit}</span>
+            </div>
+
+            <div style={styles.shortcutBtn("#17a2b8")}> {/* Cyan */}
+                <span style={styles.shortcutTitle}>PENDING FEES</span>
+                <span style={styles.shortcutValue}>₹{stats.totalPending}</span>
+            </div>
+
+            <div style={styles.shortcutBtn("#007bff")}> {/* Blue */}
+                <span style={styles.shortcutTitle}>ADMISSIONS</span>
+                <span style={styles.shortcutValue}>{stats.dayAdmissions}</span>
+            </div>
+        </div>
+
+        {/* CLOCK SECTION (Just below shortcuts like RKCL) */}
+        <div style={styles.clockContainer}>
+            <div style={styles.clockDate}>{currentTime.toDateString()}</div>
+            <div style={styles.clockTime}>{currentTime.toLocaleTimeString()}</div>
+        </div>
+
+        {/* STUDENT TABLE HEADER */}
+        <div style={styles.sectionHeader}>📄 Registered Students ({students.length})</div>
+        
+        {/* TABLE */}
+        <div style={{...styles.tableContainer, overflowX: "auto"}}>
+            <table style={{width:"100%", borderCollapse:"collapse", minWidth:"600px"}}>
+                <thead>
+                    <tr>
+                        <th style={styles.tableHeader}>NAME</th>
+                        <th style={styles.tableHeader}>MOBILE</th>
+                        <th style={styles.tableHeader}>FEES STATUS</th>
+                        <th style={styles.tableHeader}>ACTION</th>
                     </tr>
-                ))}
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    {students.map(std => (
+                        <tr key={std._id} style={{background: "white"}}>
+                            <td style={styles.tableCell}>
+                                <strong>{std.name}</strong><br/>
+                                <span style={{fontSize:"12px", color:"#888"}}>{std.course} | {new Date(std.admissionDate).toLocaleDateString()}</span>
+                            </td>
+                            <td style={styles.tableCell}>{std.mobile}</td>
+                            <td style={styles.tableCell}>
+                                <span style={{color:"green", fontWeight:"bold"}}>Paid: ₹{std.fees.paidAmount}</span><br/>
+                                <span style={{color:"red", fontSize:"12px", fontWeight:"bold"}}>Bal: ₹{std.fees.finalFee - std.fees.paidAmount}</span>
+                            </td>
+                            <td style={styles.tableCell}>
+                                {!std.approval.isApproved ? (
+                                    <button onClick={()=>handleApprove(std._id)} style={{padding:"5px 10px", background:"orange", border:"none", color:"white", borderRadius:"4px", cursor:"pointer"}}>Approve</button>
+                                ) : (
+                                    <button onClick={()=>openStudentPopup(std)} style={{padding:"5px 10px", background:"#28a745", border:"none", color:"white", borderRadius:"4px", cursor:"pointer", fontWeight:"bold"}}>View 👁️</button>
+                                )}
+                            </td>
+                        </tr>
+                    ))}
+                </tbody>
+            </table>
+        </div>
+
       </div>
 
-      {/* --- STUDENT DETAIL POPUP (EDIT MODE ENABLED) --- */}
+      {/* --- POPUPS (Logic same as requested) --- */}
+      
+      {/* STUDENT DETAIL POPUP */}
       {viewStudent && (
-        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", justifyContent:"center", alignItems:"center", zIndex:1000}}>
-            <div style={{background:"white", padding:"25px", borderRadius:"20px", width:"90%", maxWidth:"500px", maxHeight:"90vh", overflowY:"auto"}}>
-                
-                {/* Header with Close */}
-                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:"1px solid #eee", paddingBottom:"10px"}}>
-                    <h2 style={{margin:0, color: "#2c3e50"}}>
-                        {isEditing ? "✏️ Edit Profile" : `👤 ${viewStudent.name}`}
-                    </h2>
-                    <button onClick={()=>setViewStudent(null)} style={{background:"transparent", border:"none", fontSize:"20px", cursor:"pointer"}}>✕</button>
+        <div style={styles.popupOverlay}>
+            <div style={styles.popupBox}>
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px", borderBottom:"1px solid #eee", paddingBottom:"10px"}}>
+                    <h2 style={{margin:0, color:"#0d47a1"}}>{isEditing ? "✏️ Edit Profile" : `👤 ${viewStudent.name}`}</h2>
+                    <button onClick={()=>setViewStudent(null)} style={{background:"none", border:"none", fontSize:"20px", cursor:"pointer"}}>✕</button>
                 </div>
 
-                {/* Status Badge */}
                 {!isEditing && (
-                    <div style={{marginTop:"15px", marginBottom: "15px", textAlign:"center"}}>
-                        {viewStudent.isOnlineSubmitted ? (
-                            <span style={{background:"#dcfce7", color:"#166534", padding:"8px 12px", borderRadius:"15px", fontSize:"13px", fontWeight:"bold", border: "1px solid #bbf7d0"}}>✅ Govt Form Submitted</span>
-                        ) : (
-                            <span style={{background:"#fee2e2", color:"#991b1b", padding:"8px 12px", borderRadius:"15px", fontSize:"13px", fontWeight:"bold", border: "1px solid #fecaca"}}>🔴 Govt Form Pending</span>
-                        )}
+                    <div style={{textAlign:"center", marginBottom:"15px"}}>
+                        <span style={{padding:"5px 10px", borderRadius:"20px", background: viewStudent.isOnlineSubmitted ? "#dcfce7" : "#fee2e2", color: viewStudent.isOnlineSubmitted ? "green" : "red", fontWeight:"bold", fontSize:"12px"}}>
+                            {viewStudent.isOnlineSubmitted ? "✅ Govt Form Submitted" : "🔴 Govt Form Pending"}
+                        </span>
                     </div>
                 )}
 
-                {/* 👇 EDITABLE FIELDS */}
-                <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"15px", margin:"20px 0", fontSize:"14px", color: "#334155"}}>
-                    
-                    {/* Name Field */}
+                {/* FIELDS */}
+                <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"15px", marginBottom:"20px", fontSize:"14px"}}>
                     <div style={{gridColumn: "1 / -1"}}>
-                        <small style={{color:"gray", fontWeight:"bold"}}>STUDENT NAME</small>
-                        {isEditing ? <input style={styles.input} name="name" value={editFormData.name} onChange={handleEditChange}/> : <div>{viewStudent.name}</div>}
+                        <label style={{fontWeight:"bold", fontSize:"11px", color:"#666"}}>STUDENT NAME</label>
+                        {isEditing ? <input style={styles.input} name="name" value={editFormData.name} onChange={handleEditChange} /> : <div>{viewStudent.name}</div>}
                     </div>
-
-                    {/* Father Name */}
                     <div>
-                        <small style={{color:"gray", fontWeight:"bold"}}>FATHER</small>
-                        {isEditing ? <input style={styles.input} name="fatherName" value={editFormData.fatherName} onChange={handleEditChange}/> : <div>{viewStudent.fatherName}</div>}
+                        <label style={{fontWeight:"bold", fontSize:"11px", color:"#666"}}>FATHER</label>
+                        {isEditing ? <input style={styles.input} name="fatherName" value={editFormData.fatherName} onChange={handleEditChange} /> : <div>{viewStudent.fatherName}</div>}
                     </div>
-
-                    {/* Mobile */}
                     <div>
-                        <small style={{color:"gray", fontWeight:"bold"}}>MOBILE</small>
-                        {isEditing ? <input style={styles.input} name="mobile" value={editFormData.mobile} onChange={handleEditChange}/> : <div>{viewStudent.mobile}</div>}
+                        <label style={{fontWeight:"bold", fontSize:"11px", color:"#666"}}>MOBILE</label>
+                        {isEditing ? <input style={styles.input} name="mobile" value={editFormData.mobile} onChange={handleEditChange} /> : <div>{viewStudent.mobile}</div>}
                     </div>
-
-                    {/* Course */}
                     <div>
-                        <small style={{color:"gray", fontWeight:"bold"}}>COURSE</small>
-                        {isEditing ? <input style={styles.input} name="course" value={editFormData.course} onChange={handleEditChange}/> : <div>{viewStudent.course}</div>}
+                        <label style={{fontWeight:"bold", fontSize:"11px", color:"#666"}}>COURSE</label>
+                        {isEditing ? <input style={styles.input} name="course" value={editFormData.course} onChange={handleEditChange} /> : <div>{viewStudent.course}</div>}
                     </div>
-
-                    {/* Address */}
-                    <div>
-                        <small style={{color:"gray", fontWeight:"bold"}}>ADDRESS</small>
-                        {isEditing ? <input style={styles.input} name="address" value={editFormData.address} onChange={handleEditChange}/> : <div>{viewStudent.address}</div>}
+                    <div style={{gridColumn:"1 / -1"}}>
+                        <label style={{fontWeight:"bold", fontSize:"11px", color:"#666"}}>ADDRESS</label>
+                        {isEditing ? <input style={styles.input} name="address" value={editFormData.address} onChange={handleEditChange} /> : <div>{viewStudent.address}</div>}
                     </div>
                 </div>
 
-                {/* Fee Summary (Hidden in Edit Mode) */}
-                {!isEditing && (
-                    <div style={{background:"#f8fafc", padding:"15px", borderRadius:"10px", marginBottom:"20px", border: "1px solid #e2e8f0"}}>
-                        <h4 style={{margin:"0 0 10px", color: "#1e293b"}}>💰 Fees Summary</h4>
-                        <div style={{display:"flex", justifyContent:"space-between", fontSize: "14px"}}>
-                            <span>Total: ₹{viewStudent.fees.finalFee}</span>
-                            <span style={{color:"green", fontWeight:"bold"}}>Paid: ₹{viewStudent.fees.paidAmount}</span>
-                            <span style={{color:"red", fontWeight:"bold"}}>Bal: ₹{viewStudent.fees.finalFee - viewStudent.fees.paidAmount}</span>
-                        </div>
-                    </div>
-                )}
-
-                {/* 👇 ACTION BUTTONS FOOTER */}
-                <div style={{borderTop: "1px solid #ccc", paddingTop: "15px", display: "flex", flexDirection: "column", gap:"10px"}}>
-                    
+                {/* BUTTONS */}
+                <div style={{borderTop:"1px solid #eee", paddingTop:"15px", display:"flex", gap:"10px", flexWrap:"wrap"}}>
                     {isEditing ? (
-                        // SAVE / CANCEL BUTTONS
-                        <div style={{display: "flex", gap: "10px"}}>
-                            <button onClick={handleSaveChanges} style={{flex: 1, padding:"12px", background:"#16a34a", color: "white", border:"none", borderRadius:"8px", cursor:"pointer", fontWeight:"bold"}}>💾 Save Changes</button>
-                            <button onClick={()=>setIsEditing(false)} style={{flex: 1, padding:"12px", background:"#64748b", color: "white", border:"none", borderRadius:"8px", cursor:"pointer", fontWeight:"bold"}}>❌ Cancel</button>
-                        </div>
-                    ) : (
-                        // NORMAL BUTTONS
                         <>
-                            <button onClick={() => toggleOnlineStatus(viewStudent)} style={{
-                                padding: "12px", 
-                                background: viewStudent.isOnlineSubmitted ? "#f1f5f9" : "#1e293b", 
-                                color: viewStudent.isOnlineSubmitted ? "#333" : "white", 
-                                border: viewStudent.isOnlineSubmitted ? "1px solid #ccc" : "none",
-                                borderRadius:"8px", cursor:"pointer", fontWeight:"bold", fontSize:"14px"
-                            }}>
-                                {viewStudent.isOnlineSubmitted ? "Mark as Pending ❌" : "Mark as Submitted ✅"}
-                            </button>
-
-                            <div style={{display: "flex", gap: "10px"}}>
-                                {/* EDIT BUTTON - ACTIVE NOW */}
-                                <button onClick={() => setIsEditing(true)} style={{flex: 1, padding:"10px", background:"#3b82f6", color: "white", border:"none", borderRadius:"8px", cursor:"pointer", fontWeight:"bold"}}>✏️ Edit</button>
-                                
-                                <button onClick={() => handleDeleteStudent(viewStudent._id)} style={{flex: 1, padding:"10px", background:"#ef4444", color: "white", border:"none", borderRadius:"8px", cursor:"pointer", fontWeight:"bold"}}>🗑️ Delete</button>
-                            </div>
+                            <button onClick={handleSaveChanges} style={{flex:1, padding:"10px", background:"#28a745", color:"white", border:"none", borderRadius:"4px", cursor:"pointer", fontWeight:"bold"}}>💾 Save Changes</button>
+                            <button onClick={()=>setIsEditing(false)} style={{flex:1, padding:"10px", background:"#6c757d", color:"white", border:"none", borderRadius:"4px", cursor:"pointer", fontWeight:"bold"}}>❌ Cancel</button>
+                        </>
+                    ) : (
+                        <>
+                            <button onClick={() => toggleOnlineStatus(viewStudent)} style={{flex:1, padding:"10px", background:"#343a40", color:"white", border:"none", borderRadius:"4px", cursor:"pointer", fontSize:"12px", fontWeight:"bold"}}>{viewStudent.isOnlineSubmitted ? "Mark Pending" : "Mark Done"}</button>
+                            <button onClick={() => setIsEditing(true)} style={{flex:1, padding:"10px", background:"#007bff", color:"white", border:"none", borderRadius:"4px", cursor:"pointer", fontWeight:"bold"}}>✏️ Edit</button>
+                            <button onClick={() => handleDeleteStudent(viewStudent._id)} style={{flex:1, padding:"10px", background:"#dc3545", color:"white", border:"none", borderRadius:"4px", cursor:"pointer", fontWeight:"bold"}}>🗑️ Delete</button>
                         </>
                     )}
                 </div>
-
             </div>
         </div>
       )}
 
-      {/* --- EXPENSE POPUPS (Same as before) --- */}
+      {/* EXPENSE FORM */}
       {showExpenseForm && (
-        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", justifyContent:"center", alignItems:"center", zIndex:1100}}>
-            <form onSubmit={handleAddExpense} style={{background:"white", padding:"20px", borderRadius:"15px", width:"300px"}}>
-                <h3>Add Expense</h3>
-                <input placeholder="Item" value={newExpense.title} onChange={e=>setNewExpense({...newExpense, title:e.target.value})} style={{width:"100%", padding:"10px", marginBottom:"10px", boxSizing:"border-box"}} />
-                <input type="number" placeholder="Amount" value={newExpense.amount} onChange={e=>setNewExpense({...newExpense, amount:e.target.value})} style={{width:"100%", padding:"10px", marginBottom:"10px", boxSizing:"border-box"}} />
-                <button style={{width:"100%", padding:"10px", background:"black", color:"white"}}>Save</button>
-                <button type="button" onClick={()=>setShowExpenseForm(false)} style={{width:"100%", marginTop:"10px"}}>Cancel</button>
+        <div style={styles.popupOverlay}>
+            <form onSubmit={handleAddExpense} style={styles.popupBox}>
+                <h3 style={{marginTop:0, color:"#0d47a1"}}>Add New Expense</h3>
+                <input placeholder="Expense Title" value={newExpense.title} onChange={e=>setNewExpense({...newExpense, title:e.target.value})} style={styles.input} required />
+                <input type="number" placeholder="Amount" value={newExpense.amount} onChange={e=>setNewExpense({...newExpense, amount:e.target.value})} style={styles.input} required />
+                <select value={newExpense.category} onChange={e=>setNewExpense({...newExpense, category:e.target.value})} style={styles.input}>
+                    <option>Office</option><option>Salary</option><option>Rent</option><option>Other</option>
+                </select>
+                <div style={{display:"flex", gap:"10px"}}>
+                    <button style={{flex:1, padding:"10px", background:"#007bff", color:"white", border:"none", borderRadius:"4px", cursor:"pointer", fontWeight:"bold"}}>Save</button>
+                    <button type="button" onClick={()=>setShowExpenseForm(false)} style={{flex:1, padding:"10px", background:"#dc3545", color:"white", border:"none", borderRadius:"4px", cursor:"pointer", fontWeight:"bold"}}>Close</button>
+                </div>
             </form>
         </div>
       )}
 
+      {/* EXPENSE HISTORY */}
       {viewExpenseHistory && (
-        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", justifyContent:"center", alignItems:"center", zIndex:1100}}>
-            <div style={{background:"white", padding:"20px", borderRadius:"15px", width:"400px"}}>
-                <div style={{display:"flex", justifyContent:"space-between"}}><h3>Expenses</h3><button onClick={()=>setViewExpenseHistory(false)}>X</button></div>
+        <div style={styles.popupOverlay}>
+            <div style={styles.popupBox}>
+                <div style={{display:"flex", justifyContent:"space-between", marginBottom:"15px"}}>
+                    <h3 style={{margin:0}}>Today's Expenses</h3>
+                    <button onClick={()=>setViewExpenseHistory(false)} style={{border:"none", background:"none", fontSize:"18px", cursor:"pointer"}}>X</button>
+                </div>
                 {expenses.filter(e => new Date(e.date).toISOString().split('T')[0] === selectedDate).map(exp => (
                     <div key={exp._id} style={{display:"flex", justifyContent:"space-between", padding:"10px", borderBottom:"1px solid #eee"}}>
                         <span>{exp.title}</span>
-                        <div style={{display:"flex", alignItems:"center", gap:"10px"}}>
-                            <span style={{color:"red", fontWeight:"bold"}}>₹{exp.amount}</span>
-                            <button onClick={()=>handleDeleteExpense(exp._id)}>🗑️</button>
+                        <div>
+                            <span style={{fontWeight:"bold", color:"red", marginRight:"10px"}}>₹{exp.amount}</span>
+                            <button onClick={()=>handleDeleteExpense(exp._id)} style={{border:"none", background:"none", cursor:"pointer"}}>🗑️</button>
                         </div>
                     </div>
                 ))}
             </div>
         </div>
       )}
+
     </div>
   );
-}
-
-function Card({ title, value, color, sub, highlight }) {
-    return (
-        <div style={{ padding: "20px", background: highlight ? "#f1c40f" : "white", borderRadius: "10px", flex: 1, boxShadow: "0 4px 8px rgba(0,0,0,0.1)", textAlign: "center", borderTop: `5px solid ${color}`, border: highlight ? "2px solid orange" : "none", minWidth: "200px" }}>
-            <h4 style={{ margin: "0 0 10px 0", color: highlight ? "black" : "#7f8c8d" }}>{title}</h4>
-            <h1 style={{ margin: 0, color: highlight ? "black" : color }}>{value}</h1>
-            <small style={{color: highlight ? "black" : "gray"}}>{sub}</small>
-        </div>
-    );
 }
 
 export default Dashboard;
