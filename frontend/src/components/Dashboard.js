@@ -2,114 +2,111 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 
-// 👇 LIVE SERVER LINK
+// 👇 LIVE SERVER LINK (Yahi link hona chahiye)
 const BASE_URL = "https://eklvya-crm.onrender.com/api";
 
 function Dashboard() {
   const navigate = useNavigate();
   const [students, setStudents] = useState([]);
   const [expenses, setExpenses] = useState([]); 
+  
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   
-  // POPUP & EDIT STATE
+  // POPUP STATE
   const [viewStudent, setViewStudent] = useState(null); 
-  const [isEditing, setIsEditing] = useState(false); // 👈 Edit Mode State
-  const [editFormData, setEditFormData] = useState({}); // 👈 Data store karne ke liye
-
   const [showExpenseForm, setShowExpenseForm] = useState(false); 
   const [viewExpenseHistory, setViewExpenseHistory] = useState(false); 
+
+  // New Expense Form Data
   const [newExpense, setNewExpense] = useState({ title: '', amount: '', category: 'Office' });
 
   const [stats, setStats] = useState({
-    dayAdmissions: 0, dayCollection: 0, dayExpense: 0, netProfit: 0, totalPending: 0 
+    dayAdmissions: 0, 
+    dayCollection: 0, 
+    dayExpense: 0, 
+    netProfit: 0, 
+    totalPending: 0 
   });
 
   useEffect(() => { loadData(); }, []);
-  useEffect(() => { 
-    if(students.length > 0 || expenses.length > 0) calculateDailyStats(students, expenses, selectedDate);
+
+  useEffect(() => {
+    if(students.length > 0 || expenses.length > 0) {
+        calculateDailyStats(students, expenses, selectedDate);
+    }
   }, [selectedDate, students, expenses]);
 
   const loadData = async () => {
     try {
       const resStd = await axios.get(`${BASE_URL}/student/all`);
       const resExp = await axios.get(`${BASE_URL}/expense/all`);
+      
       setStudents(resStd.data);
       setExpenses(resExp.data);
+      
       calculateDailyStats(resStd.data, resExp.data, selectedDate);
-    } catch (error) { console.log("Error loading data"); }
+    } catch (error) { console.log("Error loading data from Render"); }
   };
 
-  // 👇 POPUP KHOLNE KA FUNCTION (Edit data reset karega)
-  const openStudentPopup = (std) => {
-    setViewStudent(std);
-    setEditFormData(std); // Edit ke liye data copy kiya
-    setIsEditing(false); // Shuru me edit mode band
-  };
-
-  // 👇 SAVE CHANGES FUNCTION (Yeh Data Update Karega)
-  const handleSaveChanges = async () => {
-    try {
-        await axios.put(`${BASE_URL}/student/update/${viewStudent._id}`, editFormData);
-        alert("✅ Data Updated Successfully!");
-        setIsEditing(false);
-        setViewStudent(editFormData); // Popup me naya data dikhao
-        loadData(); // Table refresh karo
-    } catch (error) {
-        alert("❌ Error updating data");
-    }
-  };
-
-  // 👇 INPUT CHANGE HANDLER
-  const handleEditChange = (e) => {
-    setEditFormData({ ...editFormData, [e.target.name]: e.target.value });
-  };
-
+  // 👇 DELETE STUDENT FUNCTION
   const handleDeleteStudent = async (id) => {
-    if(window.confirm("⚠️ WARNING: Delete permanently?")) {
+    if(window.confirm("⚠️ WARNING: Kya aap is student ko HAMESHA ke liye delete karna chahte hain?")) {
         try {
             await axios.delete(`${BASE_URL}/student/delete/${id}`);
-            alert("🗑️ Deleted!");
-            setViewStudent(null);
+            alert("🗑️ Student Deleted!");
+            setViewStudent(null); // Agar popup khula hai to band kar do
             loadData(); 
-        } catch (error) { alert("Error deleting"); }
+        } catch (error) {
+            alert("Error deleting student");
+        }
     }
   };
 
+  // 👇 DELETE EXPENSE FUNCTION
   const handleDeleteExpense = async (id) => {
-    if(window.confirm("Delete this expense?")) {
+    if(window.confirm("⚠️ Kya aap is kharche ko delete karna chahte hain?")) {
         try {
             await axios.delete(`${BASE_URL}/expense/delete/${id}`);
-            loadData();
-        } catch (error) { alert("Error deleting"); }
+            alert("🗑️ Expense Deleted!");
+            loadData(); 
+        } catch (error) { alert("Error deleting expense"); }
     }
   };
 
+  // 👇 NEW: TOGGLE ONLINE FORM STATUS
   const toggleOnlineStatus = async (student) => {
     try {
         const res = await axios.put(`${BASE_URL}/student/toggle-online/${student._id}`);
         if(res.data.success) {
+            // Local update taaki turant dikhe
             const updatedStudent = { ...student, isOnlineSubmitted: !student.isOnlineSubmitted };
-            setViewStudent(updatedStudent);
-            loadData();
+            setViewStudent(updatedStudent); // Popup update
+            loadData(); // Table update
         }
     } catch (error) { alert("Error updating status"); }
   };
 
+  // 👇 LIGHTWEIGHT EXCEL (CSV) DOWNLOAD
   const handleDownloadReport = () => {
     const targetMonth = selectedDate.substring(0, 7); 
     let csvContent = "Date,Type,Description,Category,Amount\n";
+
     students.forEach(std => {
         std.paymentHistory.forEach(pay => {
             if(pay.date.startsWith(targetMonth)) {
-                csvContent += `${new Date(pay.date).toLocaleDateString()},INCOME,${std.name},Fee,${pay.amount}\n`;
+                const row = `${new Date(pay.date).toLocaleDateString()},INCOME,${std.name} (${std.course}),Fee Collection,${pay.amount}`;
+                csvContent += row + "\n";
             }
         });
     });
+
     expenses.forEach(exp => {
         if(exp.date.startsWith(targetMonth)) {
-            csvContent += `${new Date(exp.date).toLocaleDateString()},EXPENSE,${exp.title},${exp.category},-${exp.amount}\n`;
+            const row = `${new Date(exp.date).toLocaleDateString()},EXPENSE,${exp.title},${exp.category},-${exp.amount}`;
+            csvContent += row + "\n";
         }
     });
+
     const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -120,36 +117,51 @@ function Dashboard() {
   };
 
   const calculateDailyStats = (stdData, expData, dateToCheck) => {
-    let adm = 0, coll = 0, totalExpense = 0, allPending = 0;
+    let adm = 0, coll = 0, totalExpense = 0;
+    let allPending = 0; 
+
     stdData.forEach(std => {
         allPending += (std.fees.finalFee - std.fees.paidAmount);
-        if((std.admissionDate?.split('T')[0]) === dateToCheck) adm++;
-        std.paymentHistory?.forEach(pay => {
-            if((pay.date?.split('T')[0]) === dateToCheck) coll += pay.amount;
+        let admDate = std.admissionDate ? new Date(std.admissionDate).toISOString().split('T')[0] : "";
+        if(admDate === dateToCheck) { adm++; }
+        if(std.paymentHistory) {
+            std.paymentHistory.forEach(pay => {
+                if(new Date(pay.date).toISOString().split('T')[0] === dateToCheck) coll += pay.amount;
+            });
+        }
+    });
+
+    if(expData) {
+        expData.forEach(exp => {
+            let expDate = new Date(exp.date).toISOString().split('T')[0];
+            if(expDate === dateToCheck) totalExpense += exp.amount;
         });
+    }
+
+    setStats({ 
+        dayAdmissions: adm, dayCollection: coll, dayExpense: totalExpense, netProfit: coll - totalExpense, totalPending: allPending 
     });
-    expData?.forEach(exp => {
-        if((exp.date?.split('T')[0]) === dateToCheck) totalExpense += exp.amount;
-    });
-    setStats({ dayAdmissions: adm, dayCollection: coll, dayExpense: totalExpense, netProfit: coll - totalExpense, totalPending: allPending });
   };
 
   const handleAddExpense = async (e) => {
     e.preventDefault();
-    if(!newExpense.title) return alert("Fill details");
-    await axios.post(`${BASE_URL}/expense/add`, { ...newExpense, date: selectedDate });
-    setShowExpenseForm(false); setNewExpense({ title: '', amount: '', category: 'Office' });
-    loadData();
+    if(!newExpense.title || !newExpense.amount) return alert("Detail bharo!");
+    try {
+        await axios.post(`${BASE_URL}/expense/add`, { ...newExpense, date: selectedDate });
+        setShowExpenseForm(false);
+        setNewExpense({ title: '', amount: '', category: 'Office' });
+        loadData(); 
+    } catch (error) { alert("Error adding expense"); }
   };
 
   const handleApprove = async (id) => {
-    if(window.confirm("Approve student?")) {
+    if(window.confirm("Approve discount?")) {
         await axios.put(`${BASE_URL}/student/approve/${id}`);
         loadData();
     }
   };
 
-  // STYLES
+  // --- STYLES ---
   const styles = {
     container: { maxWidth: "1200px", margin: "0 auto", padding: "10px", fontFamily: "'Segoe UI', sans-serif" },
     header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", background: "white", padding: "15px", borderRadius: "15px", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", flexWrap: "wrap", gap: "15px" },
@@ -171,12 +183,12 @@ function Dashboard() {
       padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "bold",
       background: approved ? "#dcfce7" : "#fef9c3", color: approved ? "#166534" : "#854d0e",
       display: "inline-block"
-    }),
-    input: { width: "100%", padding: "8px", border: "1px solid #3b82f6", borderRadius: "5px", marginBottom: "5px", fontSize: "14px", boxSizing: "border-box", background: "#eff6ff" }
+    })
   };
 
   return (
     <div style={styles.container}>
+      
       {/* HEADER */}
       <div style={styles.header}>
         <h2 style={styles.title}>🚀 Admin</h2>
@@ -189,7 +201,7 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* STATS */}
+      {/* STATS CARDS */}
       <div style={styles.grid}>
         <div style={{...styles.card, borderTop: "4px solid #f59e0b"}}>
             <h4 style={{margin:"0 0 5px", color:"#64748b", fontSize: "12px", textTransform: "uppercase"}}>Cash In</h4>
@@ -248,7 +260,7 @@ function Dashboard() {
                                     {!std.approval.isApproved ? (
                                         <button onClick={() => handleApprove(std._id)} style={{...styles.statusBadge(false), border:"none", cursor:"pointer"}}>Approve</button>
                                     ) : (
-                                        <button onClick={()=>openStudentPopup(std)} style={{...styles.statusBadge(true), cursor:"pointer"}}>View</button>
+                                        <span onClick={() => setViewStudent(std)} style={{...styles.statusBadge(true), cursor:"pointer"}}>View</span>
                                     )}
                                     <button onClick={() => handleDeleteStudent(std._id)} style={{border: "1px solid #fee2e2", background: "#fef2f2", color: "#ef4444", borderRadius: "6px", padding: "5px 8px", cursor: "pointer"}}>🗑️</button>
                                 </div>
@@ -260,141 +272,161 @@ function Dashboard() {
         </div>
       </div>
 
-      {/* --- STUDENT DETAIL POPUP (EDIT MODE ACTIVE) --- */}
-      {viewStudent && (
-        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", justifyContent:"center", alignItems:"center", zIndex:1000}}>
-            <div style={{background:"white", padding:"25px", borderRadius:"20px", width:"90%", maxWidth:"500px", maxHeight:"90vh", overflowY:"auto"}}>
-                
-                {/* Header with Close */}
-                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:"1px solid #eee", paddingBottom:"10px"}}>
-                    <h2 style={{margin:0, color: "#2c3e50"}}>
-                        {isEditing ? "✏️ Edit Profile" : `👤 ${viewStudent.name}`}
-                    </h2>
-                    <button onClick={()=>setViewStudent(null)} style={{background:"transparent", border:"none", fontSize:"20px", cursor:"pointer"}}>✕</button>
-                </div>
-
-                {/* Status Badge */}
-                {!isEditing && (
-                    <div style={{marginTop:"15px", marginBottom: "15px", textAlign:"center"}}>
-                        {viewStudent.isOnlineSubmitted ? (
-                            <span style={{background:"#dcfce7", color:"#166534", padding:"8px 12px", borderRadius:"15px", fontSize:"13px", fontWeight:"bold", border: "1px solid #bbf7d0"}}>✅ Govt Form Submitted</span>
-                        ) : (
-                            <span style={{background:"#fee2e2", color:"#991b1b", padding:"8px 12px", borderRadius:"15px", fontSize:"13px", fontWeight:"bold", border: "1px solid #fecaca"}}>🔴 Govt Form Pending</span>
-                        )}
-                    </div>
-                )}
-
-                {/* 👇 EDITABLE FIELDS */}
-                <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"15px", margin:"20px 0", fontSize:"14px", color: "#334155"}}>
-                    
-                    {/* Name */}
-                    <div style={{gridColumn: "1 / -1"}}>
-                        <small style={{color:"gray", fontWeight:"bold"}}>STUDENT NAME</small>
-                        {isEditing ? <input style={styles.input} name="name" value={editFormData.name} onChange={handleEditChange}/> : <div>{viewStudent.name}</div>}
-                    </div>
-
-                    {/* Father Name */}
-                    <div>
-                        <small style={{color:"gray", fontWeight:"bold"}}>FATHER</small>
-                        {isEditing ? <input style={styles.input} name="fatherName" value={editFormData.fatherName} onChange={handleEditChange}/> : <div>{viewStudent.fatherName}</div>}
-                    </div>
-
-                    {/* Mobile */}
-                    <div>
-                        <small style={{color:"gray", fontWeight:"bold"}}>MOBILE</small>
-                        {isEditing ? <input style={styles.input} name="mobile" value={editFormData.mobile} onChange={handleEditChange}/> : <div>{viewStudent.mobile}</div>}
-                    </div>
-
-                    {/* Course */}
-                    <div>
-                        <small style={{color:"gray", fontWeight:"bold"}}>COURSE</small>
-                        {isEditing ? <input style={styles.input} name="course" value={editFormData.course} onChange={handleEditChange}/> : <div>{viewStudent.course}</div>}
-                    </div>
-
-                    {/* Address */}
-                    <div>
-                        <small style={{color:"gray", fontWeight:"bold"}}>ADDRESS</small>
-                        {isEditing ? <input style={styles.input} name="address" value={editFormData.address} onChange={handleEditChange}/> : <div>{viewStudent.address}</div>}
-                    </div>
-                </div>
-
-                {/* Fee Summary (Hidden in Edit Mode) */}
-                {!isEditing && (
-                    <div style={{background:"#f8fafc", padding:"15px", borderRadius:"10px", marginBottom:"20px", border: "1px solid #e2e8f0"}}>
-                        <h4 style={{margin:"0 0 10px", color: "#1e293b"}}>💰 Fees Summary</h4>
-                        <div style={{display:"flex", justifyContent:"space-between", fontSize: "14px"}}>
-                            <span>Total: ₹{viewStudent.fees.finalFee}</span>
-                            <span style={{color:"green", fontWeight:"bold"}}>Paid: ₹{viewStudent.fees.paidAmount}</span>
-                            <span style={{color:"red", fontWeight:"bold"}}>Bal: ₹{viewStudent.fees.finalFee - viewStudent.fees.paidAmount}</span>
-                        </div>
-                    </div>
-                )}
-
-                {/* 👇 ACTION BUTTONS FOOTER */}
-                <div style={{borderTop: "1px solid #ccc", paddingTop: "15px", display: "flex", flexDirection: "column", gap:"10px"}}>
-                    
-                    {isEditing ? (
-                        // SAVE / CANCEL BUTTONS
-                        <div style={{display: "flex", gap: "10px"}}>
-                            <button onClick={handleSaveChanges} style={{flex: 1, padding:"12px", background:"#16a34a", color: "white", border:"none", borderRadius:"8px", cursor:"pointer", fontWeight:"bold"}}>💾 Save Changes</button>
-                            <button onClick={()=>setIsEditing(false)} style={{flex: 1, padding:"12px", background:"#64748b", color: "white", border:"none", borderRadius:"8px", cursor:"pointer", fontWeight:"bold"}}>❌ Cancel</button>
-                        </div>
-                    ) : (
-                        // NORMAL BUTTONS
-                        <>
-                            <button onClick={() => toggleOnlineStatus(viewStudent)} style={{
-                                padding: "12px", 
-                                background: viewStudent.isOnlineSubmitted ? "#f1f5f9" : "#1e293b", 
-                                color: viewStudent.isOnlineSubmitted ? "#333" : "white", 
-                                border: viewStudent.isOnlineSubmitted ? "1px solid #ccc" : "none",
-                                borderRadius:"8px", cursor:"pointer", fontWeight:"bold", fontSize:"14px"
-                            }}>
-                                {viewStudent.isOnlineSubmitted ? "Mark as Pending ❌" : "Mark as Submitted ✅"}
-                            </button>
-
-                            <div style={{display: "flex", gap: "10px"}}>
-                                {/* EDIT BUTTON - ACTIVE NOW */}
-                                <button onClick={() => setIsEditing(true)} style={{flex: 1, padding:"10px", background:"#3b82f6", color: "white", border:"none", borderRadius:"8px", cursor:"pointer", fontWeight:"bold"}}>✏️ Edit</button>
-                                
-                                <button onClick={() => handleDeleteStudent(viewStudent._id)} style={{flex: 1, padding:"10px", background:"#ef4444", color: "white", border:"none", borderRadius:"8px", cursor:"pointer", fontWeight:"bold"}}>🗑️ Delete</button>
-                            </div>
-                        </>
-                    )}
-                </div>
-
-            </div>
-        </div>
-      )}
-
-      {/* --- EXPENSE POPUPS (Same as before) --- */}
+      {/* POPUPS */}
       {showExpenseForm && (
-        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", justifyContent:"center", alignItems:"center", zIndex:1100}}>
-            <form onSubmit={handleAddExpense} style={{background:"white", padding:"20px", borderRadius:"15px", width:"300px"}}>
-                <h3>Add Expense</h3>
-                <input placeholder="Item" value={newExpense.title} onChange={e=>setNewExpense({...newExpense, title:e.target.value})} style={{width:"100%", padding:"10px", marginBottom:"10px", boxSizing:"border-box"}} />
-                <input type="number" placeholder="Amount" value={newExpense.amount} onChange={e=>setNewExpense({...newExpense, amount:e.target.value})} style={{width:"100%", padding:"10px", marginBottom:"10px", boxSizing:"border-box"}} />
-                <button style={{width:"100%", padding:"10px", background:"black", color:"white"}}>Save</button>
-                <button type="button" onClick={()=>setShowExpenseForm(false)} style={{width:"100%", marginTop:"10px"}}>Cancel</button>
-            </form>
+        <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1100 }}>
+            <div style={{ background: "white", padding: "20px", borderRadius: "20px", width: "320px", margin: "20px" }}>
+                <h3 style={{marginTop: 0, color: "#333", marginBottom: "15px"}}>💸 Add Expense</h3>
+                <form onSubmit={handleAddExpense}>
+                    <input placeholder="Item Name" value={newExpense.title} onChange={e => setNewExpense({...newExpense, title: e.target.value})} style={{width: "100%", padding: "10px", marginBottom: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing:"border-box"}} required />
+                    <input type="number" placeholder="Amount (₹)" value={newExpense.amount} onChange={e => setNewExpense({...newExpense, amount: e.target.value})} style={{width: "100%", padding: "10px", marginBottom: "10px", borderRadius: "8px", border: "1px solid #e2e8f0", boxSizing:"border-box"}} required />
+                    <select value={newExpense.category} onChange={e => setNewExpense({...newExpense, category: e.target.value})} style={{width: "100%", padding: "10px", marginBottom: "15px", borderRadius: "8px", border: "1px solid #e2e8f0", background: "white", boxSizing:"border-box"}}>
+                        <option>Office</option><option>Salary</option><option>Rent</option><option>Other</option>
+                    </select>
+                    <button type="submit" style={{width: "100%", background: "#1e293b", color: "white", padding: "10px", borderRadius: "8px", border: "none", fontWeight: "bold", cursor: "pointer"}}>Save</button>
+                    <button type="button" onClick={() => setShowExpenseForm(false)} style={{width: "100%", background: "transparent", color: "#64748b", padding: "10px", marginTop: "5px", border: "none", cursor: "pointer"}}>Cancel</button>
+                </form>
+            </div>
         </div>
       )}
 
       {viewExpenseHistory && (
-        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", justifyContent:"center", alignItems:"center", zIndex:1100}}>
-            <div style={{background:"white", padding:"20px", borderRadius:"15px", width:"400px"}}>
-                <div style={{display:"flex", justifyContent:"space-between"}}><h3>Expenses</h3><button onClick={()=>setViewExpenseHistory(false)}>X</button></div>
-                {expenses.filter(e => new Date(e.date).toISOString().split('T')[0] === selectedDate).map(exp => (
-                    <div key={exp._id} style={{display:"flex", justifyContent:"space-between", padding:"10px", borderBottom:"1px solid #eee"}}>
-                        <span>{exp.title}</span>
-                        <div style={{display:"flex", alignItems:"center", gap:"10px"}}>
-                            <span style={{color:"red", fontWeight:"bold"}}>₹{exp.amount}</span>
-                            <button onClick={()=>handleDeleteExpense(exp._id)}>🗑️</button>
-                        </div>
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1100 }}>
+            <div style={{ background: "white", padding: "20px", borderRadius: "10px", width: "90%", maxWidth: "500px", boxShadow: "0 5px 15px rgba(0,0,0,0.3)" }}>
+                <div style={{display: "flex", justifyContent: "space-between", borderBottom: "1px solid #ccc", paddingBottom: "10px", marginBottom: "10px"}}>
+                    <h3 style={{margin: 0, color: "#e74c3c"}}>📉 Expenses on {selectedDate}</h3>
+                    <button onClick={() => setViewExpenseHistory(false)} style={{background: "red", color: "white", border: "none", borderRadius: "50%", width: "25px", height: "25px", cursor: "pointer"}}>X</button>
+                </div>
+                {expenses.filter(e => new Date(e.date).toISOString().split('T')[0] === selectedDate).length > 0 ? (
+                    <div style={{overflowX: "auto"}}>
+                        <table border="1" style={{width: "100%", borderCollapse: "collapse", minWidth: "300px"}}>
+                            <thead style={{background: "#eee"}}>
+                                <tr>
+                                    <th style={{padding: "5px"}}>Item</th>
+                                    <th style={{padding: "5px"}}>Date</th>
+                                    <th style={{padding: "5px"}}>Amount</th>
+                                    <th style={{padding: "5px"}}>Action</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {expenses.filter(e => new Date(e.date).toISOString().split('T')[0] === selectedDate).map(exp => (
+                                    <tr key={exp._id}>
+                                        <td style={{padding: "5px"}}>{exp.title} <br/><small>{exp.category}</small></td>
+                                        <td style={{padding: "5px"}}>{new Date(exp.date).toLocaleDateString()}</td>
+                                        <td style={{padding: "5px", fontWeight: "bold", color: "red"}}>₹{exp.amount}</td>
+                                        <td style={{padding: "5px", textAlign: "center"}}>
+                                            <button onClick={() => handleDeleteExpense(exp._id)} style={{border: "none", background: "none", cursor: "pointer", fontSize: "16px"}}>🗑️</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                                <tr style={{background: "#ffebeb"}}><td colSpan="2" style={{padding: "5px", fontWeight: "bold", textAlign: "right"}}>Total:</td><td style={{padding: "5px", fontWeight: "bold", color: "red"}}>₹{stats.dayExpense}</td></tr>
+                            </tbody>
+                        </table>
                     </div>
-                ))}
+                ) : ( <p style={{textAlign: "center", color: "gray"}}>Aaj koi kharcha nahi hua! 🎉</p> )}
             </div>
         </div>
       )}
+
+      {/* 👇 UPDATED STUDENT DETAIL POPUP (STATUS, EDIT, DELETE) */}
+      {viewStudent && (
+        <div style={{ position: "fixed", top: 0, left: 0, width: "100%", height: "100%", backgroundColor: "rgba(0,0,0,0.7)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 }}>
+            <div style={{ backgroundColor: "white", padding: "20px", borderRadius: "10px", width: "90%", maxWidth: "500px", maxHeight: "90vh", overflowY: "auto", position: "relative" }}>
+                
+                {/* Header */}
+                <div style={{display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "2px solid #3498db", paddingBottom: "10px", marginBottom: "15px"}}>
+                    <h2 style={{ margin: 0, color: "#2c3e50" }}>👤 Student Profile</h2>
+                    <button onClick={() => setViewStudent(null)} style={{ background: "red", color: "white", border: "none", borderRadius: "50%", width: "30px", height: "30px", cursor: "pointer" }}>X</button>
+                </div>
+
+                {/* 👇 STATUS BADGE (Top) */}
+                <div style={{textAlign: "center", marginBottom: "20px"}}>
+                    {viewStudent.isOnlineSubmitted ? (
+                        <span style={{background:"#dcfce7", color:"#166534", padding:"8px 15px", borderRadius:"20px", fontSize:"14px", fontWeight:"bold", border: "1px solid #86efac"}}>
+                            ✅ Govt Form Submitted
+                        </span>
+                    ) : (
+                        <span style={{background:"#fee2e2", color:"#991b1b", padding:"8px 15px", borderRadius:"20px", fontSize:"14px", fontWeight:"bold", border: "1px solid #fecaca"}}>
+                            🔴 Govt Form Pending
+                        </span>
+                    )}
+                </div>
+
+                {/* Details */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "20px" }}>
+                    <div><strong>Name:</strong> {viewStudent.name}</div>
+                    <div><strong>Father:</strong> {viewStudent.fatherName}</div>
+                    <div><strong>Course:</strong> {viewStudent.course}</div>
+                    <div><strong>Mobile:</strong> {viewStudent.mobile}</div>
+                    <div><strong>Address:</strong> {viewStudent.address}</div>
+                    <div><strong>DOB:</strong> {viewStudent.dob}</div>
+                    <div style={{color: "purple"}}><strong>Admission By:</strong> {viewStudent.addedBy || "Staff Panel"}</div>
+                    <div style={{color: "blue"}}><strong>Joined:</strong> {new Date(viewStudent.admissionDate).toLocaleDateString()}</div>
+                </div>
+
+                {/* Fees */}
+                <div style={{ backgroundColor: "#f9f9f9", padding: "10px", borderRadius: "5px", marginBottom: "20px" }}>
+                    <h3 style={{marginTop: 0}}>💰 Fees Summary</h3>
+                    <p>Total Fee: ₹{viewStudent.fees.totalFee} | Discount: ₹{viewStudent.fees.discount}</p>
+                    <p><strong>Final Deal: ₹{viewStudent.fees.finalFee}</strong></p>
+                    <p style={{color: "green"}}>Paid: ₹{viewStudent.fees.paidAmount}</p>
+                    <p style={{color: "red"}}>Balance: ₹{viewStudent.fees.finalFee - viewStudent.fees.paidAmount}</p>
+                </div>
+
+                {/* History */}
+                <h3 style={{marginTop: 0}}>📜 Payment History</h3>
+                {viewStudent.paymentHistory.length > 0 ? (
+                    <div style={{overflowX: "auto", marginBottom: "20px"}}>
+                        <table border="1" style={{ width: "100%", borderCollapse: "collapse", fontSize: "14px", minWidth: "300px" }}>
+                            <thead style={{backgroundColor: "#eee"}}><tr><th style={{padding: "5px"}}>Date</th><th style={{padding: "5px"}}>Amount</th><th style={{padding: "5px"}}>Remark</th></tr></thead>
+                            <tbody>
+                                {viewStudent.paymentHistory.map((pay, index) => (
+                                    <tr key={index}>
+                                        <td style={{padding: "5px"}}>{new Date(pay.date).toLocaleDateString()}</td>
+                                        <td style={{padding: "5px", fontWeight: "bold"}}>₹{pay.amount}</td>
+                                        <td style={{padding: "5px"}}>{pay.remark || "-"}</td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                ) : ( <p style={{color: "gray", marginBottom: "20px"}}>No payments recorded yet.</p> )}
+
+                {/* 👇 ACTION BUTTONS FOOTER */}
+                <div style={{borderTop: "1px solid #ccc", paddingTop: "15px", display: "flex", flexDirection: "column", gap: "10px"}}>
+                    
+                    {/* 1. TOGGLE STATUS BUTTON */}
+                    <button onClick={() => toggleOnlineStatus(viewStudent)} style={{
+                        padding: "12px", 
+                        background: viewStudent.isOnlineSubmitted ? "#f1f5f9" : "#2c3e50", 
+                        color: viewStudent.isOnlineSubmitted ? "#333" : "white", 
+                        border: viewStudent.isOnlineSubmitted ? "1px solid #ccc" : "none",
+                        borderRadius: "8px", 
+                        cursor: "pointer", 
+                        fontWeight: "bold",
+                        fontSize: "14px"
+                    }}>
+                        {viewStudent.isOnlineSubmitted ? "Mark as Pending ❌" : "Mark as Submitted ✅"}
+                    </button>
+
+                    <div style={{display: "flex", gap: "10px"}}>
+                        {/* 2. EDIT BUTTON */}
+<button
+  onClick={() => setEditStudent(viewStudent)}
+  style={{flex: 1, padding: "10px", background: "#3498db", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold"}}
+>
+  ✏️ Edit
+</button>
+                        
+                        {/* 3. DELETE BUTTON */}
+                        <button onClick={() => handleDeleteStudent(viewStudent._id)} style={{flex: 1, padding: "10px", background: "#e74c3c", color: "white", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "bold"}}>🗑️ Delete</button>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+      )}
+
     </div>
   );
 }
