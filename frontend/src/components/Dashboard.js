@@ -10,12 +10,11 @@ function Dashboard() {
   const [students, setStudents] = useState([]);
   const [expenses, setExpenses] = useState([]); 
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
-  const [currentTime, setCurrentTime] = useState(new Date()); // 🕒 Clock State
   
   // POPUP & EDIT STATE
   const [viewStudent, setViewStudent] = useState(null); 
-  const [isEditing, setIsEditing] = useState(false); 
-  const [editFormData, setEditFormData] = useState({}); 
+  const [isEditing, setIsEditing] = useState(false); // 👈 Edit Mode State
+  const [editFormData, setEditFormData] = useState({}); // 👈 Data store karne ke liye
 
   const [showExpenseForm, setShowExpenseForm] = useState(false); 
   const [viewExpenseHistory, setViewExpenseHistory] = useState(false); 
@@ -24,12 +23,6 @@ function Dashboard() {
   const [stats, setStats] = useState({
     dayAdmissions: 0, dayCollection: 0, dayExpense: 0, netProfit: 0, totalPending: 0 
   });
-
-  // 🕒 Live Clock Effect
-  useEffect(() => {
-    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
 
   useEffect(() => { loadData(); }, []);
   useEffect(() => { 
@@ -46,22 +39,27 @@ function Dashboard() {
     } catch (error) { console.log("Error loading data"); }
   };
 
+  // 👇 POPUP KHOLNE KA FUNCTION (Edit data reset karega)
   const openStudentPopup = (std) => {
     setViewStudent(std);
-    setEditFormData(std); 
-    setIsEditing(false); 
+    setEditFormData(std); // Edit ke liye data copy kiya
+    setIsEditing(false); // Shuru me edit mode band
   };
 
+  // 👇 SAVE CHANGES FUNCTION (Yeh Data Update Karega)
   const handleSaveChanges = async () => {
     try {
         await axios.put(`${BASE_URL}/student/update/${viewStudent._id}`, editFormData);
         alert("✅ Data Updated Successfully!");
         setIsEditing(false);
-        setViewStudent(editFormData); 
-        loadData(); 
-    } catch (error) { alert("❌ Error updating data"); }
+        setViewStudent(editFormData); // Popup me naya data dikhao
+        loadData(); // Table refresh karo
+    } catch (error) {
+        alert("❌ Error updating data");
+    }
   };
 
+  // 👇 INPUT CHANGE HANDLER
   const handleEditChange = (e) => {
     setEditFormData({ ...editFormData, [e.target.name]: e.target.value });
   };
@@ -151,255 +149,264 @@ function Dashboard() {
     }
   };
 
-  // --- 🎨 RKCL INSPIRED STYLES ---
+  // STYLES
   const styles = {
-    body: { fontFamily: "'Segoe UI', sans-serif", background: "#f8f9fa", minHeight: "100vh" },
-    
-    // 1. TOP BAR (WHITE)
-    topBar: { background: "white", padding: "15px 40px", display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: "1px solid #ddd" },
-    logoText: { fontSize: "22px", fontWeight: "bold", color: "#0d47a1", textTransform: "uppercase" },
-    topControls: { display: "flex", alignItems: "center", gap: "20px" },
-    dateInput: { padding: "8px", border: "1px solid #ccc", borderRadius: "4px", outline: "none", fontSize: "14px" },
-    logoutBtn: { background: "#dc3545", color: "white", padding: "8px 15px", border: "none", borderRadius: "4px", cursor: "pointer", fontSize: "13px", fontWeight: "bold" },
-
-    // 2. NAV BAR (BLUE)
-    navBar: { background: "#2196f3", padding: "0 40px", display: "flex", alignItems: "center", height: "50px", overflowX: "auto", boxShadow: "0 2px 5px rgba(0,0,0,0.1)" },
-    navLink: { color: "white", textDecoration: "none", padding: "0 20px", height: "100%", display: "flex", alignItems: "center", fontSize: "14px", fontWeight: "600", cursor: "pointer", borderRight: "1px solid rgba(255,255,255,0.2)" },
-
-    // 3. MAIN CONTENT
-    content: { maxWidth: "1200px", margin: "20px auto", padding: "0 15px" },
-    
-    // 4. SHORTCUTS SECTION
-    sectionHeader: { background: "#2196f3", color: "white", padding: "10px 15px", fontSize: "16px", fontWeight: "bold", borderTopLeftRadius: "4px", borderTopRightRadius: "4px", display: "flex", alignItems: "center", gap: "10px", marginTop: "20px" },
-    shortcutsGrid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "10px", background: "white", padding: "15px", border: "1px solid #ddd" },
-    
-    // Colorful Buttons
-    shortcutBtn: (color) => ({
-      background: color, color: "white", padding: "15px", borderRadius: "4px", textAlign: "center", cursor: "pointer", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "90px", transition: "transform 0.2s"
+    container: { maxWidth: "1200px", margin: "0 auto", padding: "10px", fontFamily: "'Segoe UI', sans-serif" },
+    header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", background: "white", padding: "15px", borderRadius: "15px", boxShadow: "0 4px 15px rgba(0,0,0,0.05)", flexWrap: "wrap", gap: "15px" },
+    title: { margin: 0, color: "#1e293b", fontSize: "22px", fontWeight: "800", flex: "1 1 auto" },
+    controls: { display: "flex", gap: "10px", alignItems: "center", flexWrap: "wrap", justifyContent: "flex-start" },
+    btnPrimary: { background: "linear-gradient(135deg, #6366f1, #4f46e5)", color: "white", padding: "8px 15px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" },
+    btnSuccess: { background: "#10b981", color: "white", padding: "8px 15px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", display: "flex", alignItems: "center", gap: "5px", fontSize: "13px" },
+    btnDanger: { background: "#ef4444", color: "white", padding: "8px 15px", border: "none", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" },
+    btnOutline: { background: "transparent", border: "1px solid #334155", color: "#334155", padding: "8px 15px", borderRadius: "8px", cursor: "pointer", fontWeight: "600", fontSize: "13px" },
+    dateInput: { padding: "8px", borderRadius: "8px", border: "1px solid #cbd5e1", outline: "none", fontSize: "13px" },
+    grid: { display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))", gap: "15px", marginBottom: "30px" },
+    card: { background: "white", padding: "20px", borderRadius: "16px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", textAlign: "center" },
+    tableContainer: { background: "white", borderRadius: "16px", boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1)", overflow: "hidden", overflowX: "auto" },
+    table: { width: "100%", borderCollapse: "collapse", minWidth: "600px" },
+    tableHeader: { background: "#f8fafc", color: "#64748b", fontWeight: "600", textAlign: "left", padding: "12px", fontSize: "13px", textTransform: "uppercase", whiteSpace: "nowrap" },
+    tableRow: { borderBottom: "1px solid #f1f5f9" },
+    tableCell: { padding: "12px", color: "#334155", verticalAlign: "middle", fontSize: "14px" },
+    statusBadge: (approved) => ({
+      padding: "4px 10px", borderRadius: "20px", fontSize: "11px", fontWeight: "bold",
+      background: approved ? "#dcfce7" : "#fef9c3", color: approved ? "#166534" : "#854d0e",
+      display: "inline-block"
     }),
-    shortcutTitle: { fontSize: "13px", marginBottom: "5px", fontWeight: "bold", textTransform: "uppercase" },
-    shortcutValue: { fontSize: "20px", fontWeight: "bold" },
-
-    // 5. CLOCK SECTION
-    clockContainer: { background: "white", border: "1px solid #2196f3", color: "#333", padding: "20px", textAlign: "center", marginBottom: "10px", borderRadius: "0 0 4px 4px", borderTop: "none" },
-    clockTime: { fontSize: "42px", fontWeight: "bold", color: "#e67e22", textShadow: "1px 1px 2px rgba(0,0,0,0.1)" },
-    clockDate: { fontSize: "18px", fontWeight: "600", color: "#0d47a1" },
-
-    // 6. TABLE
-    tableContainer: { background: "white", border: "1px solid #ddd", borderTop: "none" },
-    tableHeader: { background: "#f8f9fa", color: "#495057", padding: "12px", borderBottom: "2px solid #dee2e6", textAlign: "left", fontSize: "13px", fontWeight: "bold" },
-    tableCell: { padding: "12px", borderBottom: "1px solid #dee2e6", fontSize: "14px", color: "#333" },
-    
-    // Popup
-    popupOverlay: { position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1000 },
-    popupBox: { background: "white", padding: "25px", borderRadius: "8px", width: "90%", maxWidth: "500px", maxHeight: "90vh", overflowY: "auto", boxShadow: "0 10px 25px rgba(0,0,0,0.2)" },
-    input: { width: "100%", padding: "8px", border: "1px solid #ccc", borderRadius: "4px", marginBottom: "10px", boxSizing: "border-box", background: "#f9f9f9" }
+    input: { width: "100%", padding: "8px", border: "1px solid #3b82f6", borderRadius: "5px", marginBottom: "5px", fontSize: "14px", boxSizing: "border-box", background: "#eff6ff" }
   };
 
   return (
-    <div style={styles.body}>
-      
-      {/* 1. TOP BAR (WHITE) */}
-      <div style={styles.topBar}>
-        <div style={styles.logoText}>🏫 Eklavya Education</div>
-        <div style={styles.topControls}>
-            <input type="date" value={selectedDate} onChange={e => setSelectedDate(e.target.value)} style={styles.dateInput} />
-            <button onClick={() => navigate('/')} style={styles.logoutBtn}>LOGOUT 🔒</button>
+    <div style={styles.container}>
+      {/* HEADER */}
+      <div style={styles.header}>
+        <h2 style={styles.title}>🚀 Admin</h2>
+        <div style={styles.controls}>
+             <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} style={styles.dateInput} />
+             <button onClick={handleDownloadReport} style={styles.btnSuccess}>📥 Report</button>
+             <button onClick={() => setShowExpenseForm(true)} style={styles.btnPrimary}>+ Expense</button>
+             <button onClick={() => navigate('/admin/staff-manager')} style={styles.btnOutline}>Staff</button>
+             <button onClick={() => navigate('/')} style={styles.btnDanger}>Logout</button>
         </div>
       </div>
 
-      {/* 2. NAV BAR (BLUE) */}
-      <div style={styles.navBar}>
-        <div style={styles.navLink} onClick={() => window.location.reload()}>🏠 DASHBOARD</div>
-        <div style={styles.navLink} onClick={handleDownloadReport}>📥 REPORTS</div>
-        <div style={styles.navLink} onClick={() => setShowExpenseForm(true)}>💸 ADD EXPENSE</div>
-        <div style={styles.navLink} onClick={() => navigate('/admin/staff-manager')}>👥 STAFF</div>
+      {/* STATS */}
+      <div style={styles.grid}>
+        <div style={{...styles.card, borderTop: "4px solid #f59e0b"}}>
+            <h4 style={{margin:"0 0 5px", color:"#64748b", fontSize: "12px", textTransform: "uppercase"}}>Cash In</h4>
+            <h1 style={{margin:0, color:"#1e293b", fontSize: "24px"}}>₹{stats.dayCollection}</h1>
+        </div>
+        <div onClick={() => setViewExpenseHistory(true)} style={{...styles.card, borderTop: "4px solid #ef4444", cursor:"pointer"}}>
+            <h4 style={{margin:"0 0 5px", color:"#64748b", fontSize: "12px", textTransform: "uppercase"}}>Expense</h4>
+            <h1 style={{margin:0, color:"#ef4444", fontSize: "24px"}}>₹{stats.dayExpense}</h1>
+        </div>
+        <div style={{...styles.card, borderTop: "4px solid #10b981"}}>
+            <h4 style={{margin:"0 0 5px", color:"#64748b", fontSize: "12px", textTransform: "uppercase"}}>Profit</h4>
+            <h1 style={{margin:0, color:"#10b981", fontSize: "24px"}}>₹{stats.netProfit}</h1>
+        </div>
+        <div style={{...styles.card, borderTop: "4px solid #dc2626"}}>
+            <h4 style={{margin:"0 0 5px", color:"#64748b", fontSize: "12px", textTransform: "uppercase"}}>Total Pending</h4>
+            <h1 style={{margin:0, color:"#dc2626", fontSize: "24px"}}>₹{stats.totalPending}</h1>
+        </div>
+        <div style={{...styles.card, borderTop: "4px solid #3b82f6"}}>
+            <h4 style={{margin:"0 0 5px", color:"#64748b", fontSize: "12px", textTransform: "uppercase"}}>Admissions</h4>
+            <h1 style={{margin:0, color:"#3b82f6", fontSize: "24px"}}>{stats.dayAdmissions}</h1>
+        </div>
       </div>
 
-      {/* 3. MAIN CONTENT */}
-      <div style={styles.content}>
-        
-        {/* SHORTCUTS HEADER */}
-        <div style={styles.sectionHeader}>📌 Quick Shortcuts</div>
-        
-        {/* SHORTCUTS BUTTONS */}
-        <div style={styles.shortcutsGrid}>
-            <div style={styles.shortcutBtn("#dc3545")}> {/* Red */}
-                <span style={styles.shortcutTitle}>TOTAL EXPENSE</span>
-                <span style={styles.shortcutValue} onClick={()=>setViewExpenseHistory(true)}>₹{stats.dayExpense}</span>
-            </div>
-            
-            <div style={styles.shortcutBtn("#ffc107")}> {/* Yellow */}
-                <span style={{...styles.shortcutTitle, color: "black"}}>CASH COLLECTION</span>
-                <span style={{...styles.shortcutValue, color: "black"}}>₹{stats.dayCollection}</span>
-            </div>
-
-            <div style={styles.shortcutBtn("#28a745")}> {/* Green */}
-                <span style={styles.shortcutTitle}>NET PROFIT</span>
-                <span style={styles.shortcutValue}>₹{stats.netProfit}</span>
-            </div>
-
-            <div style={styles.shortcutBtn("#17a2b8")}> {/* Cyan */}
-                <span style={styles.shortcutTitle}>PENDING FEES</span>
-                <span style={styles.shortcutValue}>₹{stats.totalPending}</span>
-            </div>
-
-            <div style={styles.shortcutBtn("#007bff")}> {/* Blue */}
-                <span style={styles.shortcutTitle}>ADMISSIONS</span>
-                <span style={styles.shortcutValue}>{stats.dayAdmissions}</span>
-            </div>
+      {/* TABLE */}
+      <div style={styles.tableContainer}>
+        <div style={{padding: "15px", borderBottom: "1px solid #e2e8f0", display: "flex", justifyContent: "space-between", alignItems: "center"}}>
+            <h3 style={{margin:0, color: "#1e293b", fontSize: "16px"}}>📄 Students</h3>
+            <span style={{fontSize: "11px", color: "#64748b", background: "#f1f5f9", padding: "4px 8px", borderRadius: "20px"}}>{students.length} Records</span>
         </div>
-
-        {/* CLOCK SECTION (Just below shortcuts like RKCL) */}
-        <div style={styles.clockContainer}>
-            <div style={styles.clockDate}>{currentTime.toDateString()}</div>
-            <div style={styles.clockTime}>{currentTime.toLocaleTimeString()}</div>
-        </div>
-
-        {/* STUDENT TABLE HEADER */}
-        <div style={styles.sectionHeader}>📄 Registered Students ({students.length})</div>
-        
-        {/* TABLE */}
-        <div style={{...styles.tableContainer, overflowX: "auto"}}>
-            <table style={{width:"100%", borderCollapse:"collapse", minWidth:"600px"}}>
+        <div style={{overflowX: "auto"}}>
+            <table style={styles.table}>
                 <thead>
                     <tr>
-                        <th style={styles.tableHeader}>NAME</th>
-                        <th style={styles.tableHeader}>MOBILE</th>
-                        <th style={styles.tableHeader}>FEES STATUS</th>
-                        <th style={styles.tableHeader}>ACTION</th>
+                        <th style={styles.tableHeader}>Student Name</th>
+                        <th style={styles.tableHeader}>Mobile</th>
+                        <th style={styles.tableHeader}>Fee Status</th>
+                        <th style={styles.tableHeader}>Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    {students.map(std => (
-                        <tr key={std._id} style={{background: "white"}}>
+                    {students.map((std) => (
+                        <tr key={std._id} style={styles.tableRow}>
                             <td style={styles.tableCell}>
-                                <strong>{std.name}</strong><br/>
-                                <span style={{fontSize:"12px", color:"#888"}}>{std.course} | {new Date(std.admissionDate).toLocaleDateString()}</span>
+                                <div style={{fontWeight: "bold", fontSize: "14px"}}>{std.name}</div>
+                                <div style={{fontSize: "11px", color: "#64748b", marginTop: "2px"}}>{std.course} • {new Date(std.admissionDate).toLocaleDateString()}</div>
                             </td>
-                            <td style={styles.tableCell}>{std.mobile}</td>
+                            <td style={styles.tableCell}><span style={{background: "#eff6ff", color: "#2563eb", padding: "4px 8px", borderRadius: "6px", fontSize: "12px", fontWeight: "600"}}>{std.mobile}</span></td>
                             <td style={styles.tableCell}>
-                                <span style={{color:"green", fontWeight:"bold"}}>Paid: ₹{std.fees.paidAmount}</span><br/>
-                                <span style={{color:"red", fontSize:"12px", fontWeight:"bold"}}>Bal: ₹{std.fees.finalFee - std.fees.paidAmount}</span>
+                                <div style={{fontSize: "12px", display: "flex", flexDirection: "column", gap: "2px"}}>
+                                    <span style={{color:"#16a34a", fontWeight: "600"}}>Paid: ₹{std.fees.paidAmount}</span>
+                                    <span style={{color:"#dc2626", fontWeight: "600"}}>Bal: ₹{std.fees.finalFee - std.fees.paidAmount}</span>
+                                </div>
                             </td>
                             <td style={styles.tableCell}>
-                                {!std.approval.isApproved ? (
-                                    <button onClick={()=>handleApprove(std._id)} style={{padding:"5px 10px", background:"orange", border:"none", color:"white", borderRadius:"4px", cursor:"pointer"}}>Approve</button>
-                                ) : (
-                                    <button onClick={()=>openStudentPopup(std)} style={{padding:"5px 10px", background:"#28a745", border:"none", color:"white", borderRadius:"4px", cursor:"pointer", fontWeight:"bold"}}>View 👁️</button>
-                                )}
+                                <div style={{display: "flex", alignItems: "center", gap: "8px"}}>
+                                    {!std.approval.isApproved ? (
+                                        <button onClick={() => handleApprove(std._id)} style={{...styles.statusBadge(false), border:"none", cursor:"pointer"}}>Approve</button>
+                                    ) : (
+                                        <button onClick={()=>openStudentPopup(std)} style={{...styles.statusBadge(true), cursor:"pointer"}}>View</button>
+                                    )}
+                                    <button onClick={() => handleDeleteStudent(std._id)} style={{border: "1px solid #fee2e2", background: "#fef2f2", color: "#ef4444", borderRadius: "6px", padding: "5px 8px", cursor: "pointer"}}>🗑️</button>
+                                </div>
                             </td>
                         </tr>
                     ))}
                 </tbody>
             </table>
         </div>
-
       </div>
 
-      {/* --- POPUPS (Logic same as requested) --- */}
-      
-      {/* STUDENT DETAIL POPUP */}
+      {/* --- STUDENT DETAIL POPUP (EDIT MODE ACTIVE) --- */}
       {viewStudent && (
-        <div style={styles.popupOverlay}>
-            <div style={styles.popupBox}>
-                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"20px", borderBottom:"1px solid #eee", paddingBottom:"10px"}}>
-                    <h2 style={{margin:0, color:"#0d47a1"}}>{isEditing ? "✏️ Edit Profile" : `👤 ${viewStudent.name}`}</h2>
-                    <button onClick={()=>setViewStudent(null)} style={{background:"none", border:"none", fontSize:"20px", cursor:"pointer"}}>✕</button>
+        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.6)", display:"flex", justifyContent:"center", alignItems:"center", zIndex:1000}}>
+            <div style={{background:"white", padding:"25px", borderRadius:"20px", width:"90%", maxWidth:"500px", maxHeight:"90vh", overflowY:"auto"}}>
+                
+                {/* Header with Close */}
+                <div style={{display:"flex", justifyContent:"space-between", alignItems:"center", borderBottom:"1px solid #eee", paddingBottom:"10px"}}>
+                    <h2 style={{margin:0, color: "#2c3e50"}}>
+                        {isEditing ? "✏️ Edit Profile" : `👤 ${viewStudent.name}`}
+                    </h2>
+                    <button onClick={()=>setViewStudent(null)} style={{background:"transparent", border:"none", fontSize:"20px", cursor:"pointer"}}>✕</button>
                 </div>
 
+                {/* Status Badge */}
                 {!isEditing && (
-                    <div style={{textAlign:"center", marginBottom:"15px"}}>
-                        <span style={{padding:"5px 10px", borderRadius:"20px", background: viewStudent.isOnlineSubmitted ? "#dcfce7" : "#fee2e2", color: viewStudent.isOnlineSubmitted ? "green" : "red", fontWeight:"bold", fontSize:"12px"}}>
-                            {viewStudent.isOnlineSubmitted ? "✅ Govt Form Submitted" : "🔴 Govt Form Pending"}
-                        </span>
+                    <div style={{marginTop:"15px", marginBottom: "15px", textAlign:"center"}}>
+                        {viewStudent.isOnlineSubmitted ? (
+                            <span style={{background:"#dcfce7", color:"#166534", padding:"8px 12px", borderRadius:"15px", fontSize:"13px", fontWeight:"bold", border: "1px solid #bbf7d0"}}>✅ Govt Form Submitted</span>
+                        ) : (
+                            <span style={{background:"#fee2e2", color:"#991b1b", padding:"8px 12px", borderRadius:"15px", fontSize:"13px", fontWeight:"bold", border: "1px solid #fecaca"}}>🔴 Govt Form Pending</span>
+                        )}
                     </div>
                 )}
 
-                {/* FIELDS */}
-                <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"15px", marginBottom:"20px", fontSize:"14px"}}>
+                {/* 👇 EDITABLE FIELDS */}
+                <div style={{display:"grid", gridTemplateColumns:"1fr 1fr", gap:"15px", margin:"20px 0", fontSize:"14px", color: "#334155"}}>
+                    
+                    {/* Name */}
                     <div style={{gridColumn: "1 / -1"}}>
-                        <label style={{fontWeight:"bold", fontSize:"11px", color:"#666"}}>STUDENT NAME</label>
-                        {isEditing ? <input style={styles.input} name="name" value={editFormData.name} onChange={handleEditChange} /> : <div>{viewStudent.name}</div>}
+                        <small style={{color:"gray", fontWeight:"bold"}}>STUDENT NAME</small>
+                        {isEditing ? <input style={styles.input} name="name" value={editFormData.name} onChange={handleEditChange}/> : <div>{viewStudent.name}</div>}
                     </div>
+
+                    {/* Father Name */}
                     <div>
-                        <label style={{fontWeight:"bold", fontSize:"11px", color:"#666"}}>FATHER</label>
-                        {isEditing ? <input style={styles.input} name="fatherName" value={editFormData.fatherName} onChange={handleEditChange} /> : <div>{viewStudent.fatherName}</div>}
+                        <small style={{color:"gray", fontWeight:"bold"}}>FATHER</small>
+                        {isEditing ? <input style={styles.input} name="fatherName" value={editFormData.fatherName} onChange={handleEditChange}/> : <div>{viewStudent.fatherName}</div>}
                     </div>
+
+                    {/* Mobile */}
                     <div>
-                        <label style={{fontWeight:"bold", fontSize:"11px", color:"#666"}}>MOBILE</label>
-                        {isEditing ? <input style={styles.input} name="mobile" value={editFormData.mobile} onChange={handleEditChange} /> : <div>{viewStudent.mobile}</div>}
+                        <small style={{color:"gray", fontWeight:"bold"}}>MOBILE</small>
+                        {isEditing ? <input style={styles.input} name="mobile" value={editFormData.mobile} onChange={handleEditChange}/> : <div>{viewStudent.mobile}</div>}
                     </div>
+
+                    {/* Course */}
                     <div>
-                        <label style={{fontWeight:"bold", fontSize:"11px", color:"#666"}}>COURSE</label>
-                        {isEditing ? <input style={styles.input} name="course" value={editFormData.course} onChange={handleEditChange} /> : <div>{viewStudent.course}</div>}
+                        <small style={{color:"gray", fontWeight:"bold"}}>COURSE</small>
+                        {isEditing ? <input style={styles.input} name="course" value={editFormData.course} onChange={handleEditChange}/> : <div>{viewStudent.course}</div>}
                     </div>
-                    <div style={{gridColumn:"1 / -1"}}>
-                        <label style={{fontWeight:"bold", fontSize:"11px", color:"#666"}}>ADDRESS</label>
-                        {isEditing ? <input style={styles.input} name="address" value={editFormData.address} onChange={handleEditChange} /> : <div>{viewStudent.address}</div>}
+
+                    {/* Address */}
+                    <div>
+                        <small style={{color:"gray", fontWeight:"bold"}}>ADDRESS</small>
+                        {isEditing ? <input style={styles.input} name="address" value={editFormData.address} onChange={handleEditChange}/> : <div>{viewStudent.address}</div>}
                     </div>
                 </div>
 
-                {/* BUTTONS */}
-                <div style={{borderTop:"1px solid #eee", paddingTop:"15px", display:"flex", gap:"10px", flexWrap:"wrap"}}>
+                {/* Fee Summary (Hidden in Edit Mode) */}
+                {!isEditing && (
+                    <div style={{background:"#f8fafc", padding:"15px", borderRadius:"10px", marginBottom:"20px", border: "1px solid #e2e8f0"}}>
+                        <h4 style={{margin:"0 0 10px", color: "#1e293b"}}>💰 Fees Summary</h4>
+                        <div style={{display:"flex", justifyContent:"space-between", fontSize: "14px"}}>
+                            <span>Total: ₹{viewStudent.fees.finalFee}</span>
+                            <span style={{color:"green", fontWeight:"bold"}}>Paid: ₹{viewStudent.fees.paidAmount}</span>
+                            <span style={{color:"red", fontWeight:"bold"}}>Bal: ₹{viewStudent.fees.finalFee - viewStudent.fees.paidAmount}</span>
+                        </div>
+                    </div>
+                )}
+
+                {/* 👇 ACTION BUTTONS FOOTER */}
+                <div style={{borderTop: "1px solid #ccc", paddingTop: "15px", display: "flex", flexDirection: "column", gap:"10px"}}>
+                    
                     {isEditing ? (
-                        <>
-                            <button onClick={handleSaveChanges} style={{flex:1, padding:"10px", background:"#28a745", color:"white", border:"none", borderRadius:"4px", cursor:"pointer", fontWeight:"bold"}}>💾 Save Changes</button>
-                            <button onClick={()=>setIsEditing(false)} style={{flex:1, padding:"10px", background:"#6c757d", color:"white", border:"none", borderRadius:"4px", cursor:"pointer", fontWeight:"bold"}}>❌ Cancel</button>
-                        </>
+                        // SAVE / CANCEL BUTTONS
+                        <div style={{display: "flex", gap: "10px"}}>
+                            <button onClick={handleSaveChanges} style={{flex: 1, padding:"12px", background:"#16a34a", color: "white", border:"none", borderRadius:"8px", cursor:"pointer", fontWeight:"bold"}}>💾 Save Changes</button>
+                            <button onClick={()=>setIsEditing(false)} style={{flex: 1, padding:"12px", background:"#64748b", color: "white", border:"none", borderRadius:"8px", cursor:"pointer", fontWeight:"bold"}}>❌ Cancel</button>
+                        </div>
                     ) : (
+                        // NORMAL BUTTONS
                         <>
-                            <button onClick={() => toggleOnlineStatus(viewStudent)} style={{flex:1, padding:"10px", background:"#343a40", color:"white", border:"none", borderRadius:"4px", cursor:"pointer", fontSize:"12px", fontWeight:"bold"}}>{viewStudent.isOnlineSubmitted ? "Mark Pending" : "Mark Done"}</button>
-                            <button onClick={() => setIsEditing(true)} style={{flex:1, padding:"10px", background:"#007bff", color:"white", border:"none", borderRadius:"4px", cursor:"pointer", fontWeight:"bold"}}>✏️ Edit</button>
-                            <button onClick={() => handleDeleteStudent(viewStudent._id)} style={{flex:1, padding:"10px", background:"#dc3545", color:"white", border:"none", borderRadius:"4px", cursor:"pointer", fontWeight:"bold"}}>🗑️ Delete</button>
+                            <button onClick={() => toggleOnlineStatus(viewStudent)} style={{
+                                padding: "12px", 
+                                background: viewStudent.isOnlineSubmitted ? "#f1f5f9" : "#1e293b", 
+                                color: viewStudent.isOnlineSubmitted ? "#333" : "white", 
+                                border: viewStudent.isOnlineSubmitted ? "1px solid #ccc" : "none",
+                                borderRadius:"8px", cursor:"pointer", fontWeight:"bold", fontSize:"14px"
+                            }}>
+                                {viewStudent.isOnlineSubmitted ? "Mark as Pending ❌" : "Mark as Submitted ✅"}
+                            </button>
+
+                            <div style={{display: "flex", gap: "10px"}}>
+                                {/* EDIT BUTTON - ACTIVE NOW */}
+                                <button onClick={() => setIsEditing(true)} style={{flex: 1, padding:"10px", background:"#3b82f6", color: "white", border:"none", borderRadius:"8px", cursor:"pointer", fontWeight:"bold"}}>✏️ Edit</button>
+                                
+                                <button onClick={() => handleDeleteStudent(viewStudent._id)} style={{flex: 1, padding:"10px", background:"#ef4444", color: "white", border:"none", borderRadius:"8px", cursor:"pointer", fontWeight:"bold"}}>🗑️ Delete</button>
+                            </div>
                         </>
                     )}
                 </div>
+
             </div>
         </div>
       )}
 
-      {/* EXPENSE FORM */}
+      {/* --- EXPENSE POPUPS (Same as before) --- */}
       {showExpenseForm && (
-        <div style={styles.popupOverlay}>
-            <form onSubmit={handleAddExpense} style={styles.popupBox}>
-                <h3 style={{marginTop:0, color:"#0d47a1"}}>Add New Expense</h3>
-                <input placeholder="Expense Title" value={newExpense.title} onChange={e=>setNewExpense({...newExpense, title:e.target.value})} style={styles.input} required />
-                <input type="number" placeholder="Amount" value={newExpense.amount} onChange={e=>setNewExpense({...newExpense, amount:e.target.value})} style={styles.input} required />
-                <select value={newExpense.category} onChange={e=>setNewExpense({...newExpense, category:e.target.value})} style={styles.input}>
-                    <option>Office</option><option>Salary</option><option>Rent</option><option>Other</option>
-                </select>
-                <div style={{display:"flex", gap:"10px"}}>
-                    <button style={{flex:1, padding:"10px", background:"#007bff", color:"white", border:"none", borderRadius:"4px", cursor:"pointer", fontWeight:"bold"}}>Save</button>
-                    <button type="button" onClick={()=>setShowExpenseForm(false)} style={{flex:1, padding:"10px", background:"#dc3545", color:"white", border:"none", borderRadius:"4px", cursor:"pointer", fontWeight:"bold"}}>Close</button>
-                </div>
+        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", justifyContent:"center", alignItems:"center", zIndex:1100}}>
+            <form onSubmit={handleAddExpense} style={{background:"white", padding:"20px", borderRadius:"15px", width:"300px"}}>
+                <h3>Add Expense</h3>
+                <input placeholder="Item" value={newExpense.title} onChange={e=>setNewExpense({...newExpense, title:e.target.value})} style={{width:"100%", padding:"10px", marginBottom:"10px", boxSizing:"border-box"}} />
+                <input type="number" placeholder="Amount" value={newExpense.amount} onChange={e=>setNewExpense({...newExpense, amount:e.target.value})} style={{width:"100%", padding:"10px", marginBottom:"10px", boxSizing:"border-box"}} />
+                <button style={{width:"100%", padding:"10px", background:"black", color:"white"}}>Save</button>
+                <button type="button" onClick={()=>setShowExpenseForm(false)} style={{width:"100%", marginTop:"10px"}}>Cancel</button>
             </form>
         </div>
       )}
 
-      {/* EXPENSE HISTORY */}
       {viewExpenseHistory && (
-        <div style={styles.popupOverlay}>
-            <div style={styles.popupBox}>
-                <div style={{display:"flex", justifyContent:"space-between", marginBottom:"15px"}}>
-                    <h3 style={{margin:0}}>Today's Expenses</h3>
-                    <button onClick={()=>setViewExpenseHistory(false)} style={{border:"none", background:"none", fontSize:"18px", cursor:"pointer"}}>X</button>
-                </div>
+        <div style={{position:"fixed", inset:0, background:"rgba(0,0,0,0.5)", display:"flex", justifyContent:"center", alignItems:"center", zIndex:1100}}>
+            <div style={{background:"white", padding:"20px", borderRadius:"15px", width:"400px"}}>
+                <div style={{display:"flex", justifyContent:"space-between"}}><h3>Expenses</h3><button onClick={()=>setViewExpenseHistory(false)}>X</button></div>
                 {expenses.filter(e => new Date(e.date).toISOString().split('T')[0] === selectedDate).map(exp => (
                     <div key={exp._id} style={{display:"flex", justifyContent:"space-between", padding:"10px", borderBottom:"1px solid #eee"}}>
                         <span>{exp.title}</span>
-                        <div>
-                            <span style={{fontWeight:"bold", color:"red", marginRight:"10px"}}>₹{exp.amount}</span>
-                            <button onClick={()=>handleDeleteExpense(exp._id)} style={{border:"none", background:"none", cursor:"pointer"}}>🗑️</button>
+                        <div style={{display:"flex", alignItems:"center", gap:"10px"}}>
+                            <span style={{color:"red", fontWeight:"bold"}}>₹{exp.amount}</span>
+                            <button onClick={()=>handleDeleteExpense(exp._id)}>🗑️</button>
                         </div>
                     </div>
                 ))}
             </div>
         </div>
       )}
-
     </div>
   );
+}
+
+function Card({ title, value, color, sub, highlight }) {
+    return (
+        <div style={{ padding: "20px", background: highlight ? "#f1c40f" : "white", borderRadius: "10px", flex: 1, boxShadow: "0 4px 8px rgba(0,0,0,0.1)", textAlign: "center", borderTop: `5px solid ${color}`, border: highlight ? "2px solid orange" : "none", minWidth: "200px" }}>
+            <h4 style={{ margin: "0 0 10px 0", color: highlight ? "black" : "#7f8c8d" }}>{title}</h4>
+            <h1 style={{ margin: 0, color: highlight ? "black" : color }}>{value}</h1>
+            <small style={{color: highlight ? "black" : "gray"}}>{sub}</small>
+        </div>
+    );
 }
 
 export default Dashboard;
