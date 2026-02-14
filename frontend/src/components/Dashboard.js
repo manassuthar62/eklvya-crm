@@ -484,14 +484,4 @@ function Dashboard() {
     );
 }
 
-function Card({ title, value, color, sub, highlight }) {
-    return (
-        <div style={{ padding: "20px", background: highlight ? "#f1c40f" : "white", borderRadius: "10px", flex: 1, boxShadow: "0 4px 8px rgba(0,0,0,0.1)", textAlign: "center", borderTop: `5px solid ${color}`, border: highlight ? "2px solid orange" : "none", minWidth: "200px" }}>
-            <h4 style={{ margin: "0 0 10px 0", color: highlight ? "black" : "#7f8c8d" }}>{title}</h4>
-            <h1 style={{ margin: 0, color: highlight ? "black" : color }}>{value}</h1>
-            <small style={{ color: highlight ? "black" : "gray" }}>{sub}</small>
-        </div>
-    );
-}
-
 export default Dashboard;
