@@ -93,7 +93,11 @@ function Dashboard() {
     const handleUpdateStudent = async (e) => {
         e.preventDefault();
         try {
-            await axios.put(`${BASE_URL}/student/update/${editStudent._id}`, editStudent);
+            // Recalculate Final Fee before sending
+            const updatedStudent = { ...editStudent };
+            updatedStudent.fees.finalFee = updatedStudent.fees.totalFee - updatedStudent.fees.discount;
+
+            await axios.put(`${BASE_URL}/student/update/${editStudent._id}`, updatedStudent);
             alert("✅ Student Updated Successfully!");
             setEditStudent(null);
             setViewStudent(null);
@@ -355,6 +359,7 @@ function Dashboard() {
                                     <td style={styles.tableCell}>
                                         <div style={{ display: "flex", gap: "8px" }}>
                                             <button onClick={() => setViewStudent(std)} style={{ background: "white", border: "1px solid #cbd5e1", padding: "6px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>View</button>
+                                            <button onClick={() => setEditStudent(std)} style={{ background: "#3b82f6", color: "white", border: "none", padding: "6px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "12px", fontWeight: "600" }}>Edit</button> {/* NEW BUTTON */}
                                             <button onClick={() => handleDeleteStudent(std._id)} style={{ background: "#fee2e2", border: "1px solid #fecaca", padding: "6px 12px", borderRadius: "8px", cursor: "pointer", fontSize: "12px", color: "#991b1b" }}>Trash</button>
                                         </div>
                                     </td>
@@ -484,25 +489,67 @@ function Dashboard() {
             {/* 👇 EDIT STUDENT MODAL */}
             {editStudent && (
                 <div style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.5)", display: "flex", justifyContent: "center", alignItems: "center", zIndex: 1200 }}>
-                    <div style={{ background: "white", padding: "20px", borderRadius: "20px", width: "350px", margin: "20px", maxHeight: "90vh", overflowY: "auto" }}>
-                        <h3 style={{ marginTop: 0, color: "#2c3e50", marginBottom: "15px" }}>✏️ Edit Student</h3>
+                    <div style={{ background: "white", padding: "20px", borderRadius: "20px", width: "400px", margin: "20px", maxHeight: "90vh", overflowY: "auto" }}>
+                        <h3 style={{ marginTop: 0, color: "#2c3e50", marginBottom: "15px" }}>✏️ Edit Student Details</h3>
                         <form onSubmit={handleUpdateStudent}>
-                            <div style={{ marginBottom: "10px" }}>
-                                <label style={{ display: "block", marginBottom: "5px", fontSize: "12px" }}>Name</label>
-                                <input value={editStudent.name} onChange={e => setEditStudent({ ...editStudent, name: e.target.value })} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0" }} required />
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+                                <div>
+                                    <label style={{ display: "block", marginBottom: "5px", fontSize: "12px" }}>Name</label>
+                                    <input value={editStudent.name} onChange={e => setEditStudent({ ...editStudent, name: e.target.value })} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0" }} required />
+                                </div>
+                                <div>
+                                    <label style={{ display: "block", marginBottom: "5px", fontSize: "12px" }}>Mobile</label>
+                                    <input value={editStudent.mobile} onChange={e => setEditStudent({ ...editStudent, mobile: e.target.value })} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0" }} required />
+                                </div>
                             </div>
+
                             <div style={{ marginBottom: "10px" }}>
                                 <label style={{ display: "block", marginBottom: "5px", fontSize: "12px" }}>Father Name</label>
                                 <input value={editStudent.fatherName} onChange={e => setEditStudent({ ...editStudent, fatherName: e.target.value })} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0" }} required />
                             </div>
+
+                            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px", marginBottom: "10px" }}>
+                                <div>
+                                    <label style={{ display: "block", marginBottom: "5px", fontSize: "12px" }}>DOB</label>
+                                    <input type="date" value={editStudent.dob} onChange={e => setEditStudent({ ...editStudent, dob: e.target.value })} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0" }} required />
+                                </div>
+                                <div>
+                                    <label style={{ display: "block", marginBottom: "5px", fontSize: "12px" }}>Course</label>
+                                    <select value={editStudent.course} onChange={e => setEditStudent({ ...editStudent, course: e.target.value })} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0" }}>
+                                        <option>RS-CIT</option><option>P.G.D.C.A</option><option>Tally Prime</option><option>DCA</option><option>Full Stack Dev</option>
+                                    </select>
+                                </div>
+                            </div>
+
                             <div style={{ marginBottom: "10px" }}>
-                                <label style={{ display: "block", marginBottom: "5px", fontSize: "12px" }}>Mobile</label>
-                                <input value={editStudent.mobile} onChange={e => setEditStudent({ ...editStudent, mobile: e.target.value })} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0" }} required />
-                            </div>
-                            <div style={{ marginBottom: "15px" }}>
                                 <label style={{ display: "block", marginBottom: "5px", fontSize: "12px" }}>Address</label>
-                                <input value={editStudent.address} onChange={e => setEditStudent({ ...editStudent, address: e.target.value })} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0" }} required />
+                                <textarea value={editStudent.address} onChange={e => setEditStudent({ ...editStudent, address: e.target.value })} style={{ width: "100%", padding: "8px", borderRadius: "6px", border: "1px solid #e2e8f0" }} required />
                             </div>
+
+                            {/* FEES EDIT SECTION */}
+                            <div style={{ background: "#f8fafc", padding: "10px", borderRadius: "8px", marginBottom: "15px", border: "1px solid #e2e8f0" }}>
+                                <h4 style={{ margin: "0 0 10px 0", fontSize: "13px", color: "#64748b" }}>💰 Update Fees</h4>
+                                <div style={{ display: "flex", gap: "10px" }}>
+                                    <div>
+                                        <label style={{ fontSize: "11px" }}>Total Fee</label>
+                                        <input type="number" value={editStudent.fees.totalFee}
+                                            onChange={e => setEditStudent({ ...editStudent, fees: { ...editStudent.fees, totalFee: e.target.value, finalFee: e.target.value - editStudent.fees.discount } })}
+                                            style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: "11px" }}>Discount</label>
+                                        <input type="number" value={editStudent.fees.discount}
+                                            onChange={e => setEditStudent({ ...editStudent, fees: { ...editStudent.fees, discount: e.target.value, finalFee: editStudent.fees.totalFee - e.target.value } })}
+                                            style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #cbd5e1" }}
+                                        />
+                                    </div>
+                                </div>
+                                <div style={{ marginTop: "5px", fontSize: "12px", fontWeight: "bold", color: "#334155" }}>
+                                    Final Fee: ₹{editStudent.fees.totalFee - editStudent.fees.discount}
+                                </div>
+                            </div>
+
                             <div style={{ display: "flex", gap: "10px" }}>
                                 <button type="submit" style={{ flex: 1, background: "#3b82f6", color: "white", padding: "10px", borderRadius: "8px", border: "none", fontWeight: "bold", cursor: "pointer" }}>Save Update</button>
                                 <button type="button" onClick={() => setEditStudent(null)} style={{ flex: 1, background: "#f1f5f9", color: "#64748b", padding: "10px", borderRadius: "8px", border: "none", fontWeight: "bold", cursor: "pointer" }}>Cancel</button>
